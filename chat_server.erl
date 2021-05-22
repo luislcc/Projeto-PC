@@ -8,13 +8,15 @@ room(Pids)->
 			room([Pid | Pids]);
 
 		{line,Data} ->
+			%X = string:trim(Data),
+			%Y = list_to_integer(binary_to_list(X)),
 			io:format("received ~p ~n",[Data]),
 			[Pid ! {line,Data} || Pid <- Pids],
 			room(Pids);
 
 		{leave,Pid} ->
 			io:format("user has left~n",[]),
-			room(Pids -- [Pid]);
+			room(Pids -- [Pid])
 
 	end.
 
@@ -46,7 +48,7 @@ user(Sock,Room)->
 			Room ! {leave,self()};
 
 		{tcp_error,_,_} ->
-			Room ! {leave,self()};
+			Room ! {leave,self()}
 	end.
 
 stop()->
