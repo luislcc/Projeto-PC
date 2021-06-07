@@ -59,11 +59,11 @@ loop(Dbase)->
 
     {online,Pid} -> 
     		Pid ! {online,[X || X <- maps:keys(Dbase), element(2,maps:get(X,Dbase))],?MODULE},
-    		loop(Dbase)
+    		loop(Dbase);
 
     {stop} -> ok
 
     end.
 
 start()-> register(?MODULE,spawn(fun()-> loop(maps:new()) end ) ).
-stop()-> ?MODULE! stop
+stop()-> ?MODULE ! stop.

@@ -12,11 +12,25 @@ server(Port)->
 	end.
 
 
+%State = {{width,height,obstacle_list},{Pid => {pos =>},List}
 
+state_to_list(State) ->
+	{Map,Players,Creatures} = State,
+	{Width,Height,Obstacle_List} = Map,
+	Map_String = [integer_to_list(Width), "\n", integer_to_list(Height), "\n", integer_to_list(length(Obstacle_List)),"\n", obstacle_to_list(Obstacle_List)],
+	Player_String = [integer_to_list(maps:size(Players)),"\n",player_to_list(Players)],
+	Creature_String = [integer_to_list(length(Creatures)),"\n",creature_to_list(Creatures)],
+	[Map_String,Player_String,Creature_String].
 
+obstacle_to_list(Obstacle_List)->             
+	[[float_to_list(X),"\n",float_to_list(Y),"\n",float_to_list(R),"\n"] || {{X,Y},R} <- Obstacle_List]. 
 
+player_to_list(Players)->
+	L = maps:to_list(Players),
+	[[pid_to_list(P),"\n",float_to_list(element(1,maps:get(pos,M))),"\n",float_to_list(element(2,maps:get(pos,M))),"\n",integer_to_list(maps:get(radius,M)),"\n",float_to_list( maps:get(direction,M)),"\n"] || {P,M} <- L ].
 
-
+creature_to_list(Creatures)->
+	[[integer_to_list(T),"\n",float_to_list(X),"\n",float_to_list(Y),"\n",float_to_list(R),"\n",float_to_list(D),"\n"] || M <- Creatures, T <- maps:get(type,M), X <- element(1,maps:get(pos,M)), Y <- element(2,maps:get(pos,M)),R <- maps:get(radius,M), D <- maps:get(direction,M)].
 
 
 user(Sock,Username)->
@@ -26,11 +40,18 @@ user(Sock,Username)->
 					["logout"] ->
 						 	login_manager ! {create_account,self(),Username},
 						 	user(Sock,Username);
+
+					["update"] ->
+							game_manager ! {join,self()},
+							io:format("Hello~n"),
+							user(Sock,Username);
 				
 					["online"] ->
 							login_manager ! {online,self()},
-							user(Sock,Username);
+							user(Sock,Username)
 				end;
+
+		{update,State,game_manager} -> io:format("USER RECEBEU~n"), gen_tcp:send(Sock,list_to_binary("update\n" ++ state_to_list(State))),user(Sock,Username);
 
 		
 		{valid_logout,login_manager} ->
@@ -43,12 +64,6 @@ user(Sock,Username)->
 					gen_tcp:send(Sock,list_to_binary(Y)),
 					user_manager(Sock)
 	end.
-
-
-
-
-
-
 
 
 user_manager(Sock)->
@@ -67,7 +82,7 @@ user_manager(Sock)->
 
 				["close",Username,Password] ->
 							login_manager ! {close_account,self(),Username,Password},
-						 	user_manager(Sock);
+							user_manager(Sock);
 
 
 				["online"] ->
@@ -76,12 +91,13 @@ user_manager(Sock)->
 
 				_ -> user_manager(Sock)
 
-			end;
+		end;
 
 
 		
 		{valid_login, Username, login_manager} ->
-							gen_tcp:send(Sock,list_to_binary("valid login\n")),	user(Sock,Username);
+							gen_tcp:send(Sock,list_to_binary("valid login\n")),
+							user(Sock,Username);
 
 		{invalid_login,login_manager} -> 
 						gen_tcp:send(Sock,list_to_binary("invalid login\n")),
@@ -109,15 +125,6 @@ user_manager(Sock)->
 					gen_tcp:send(Sock,list_to_binary(Y)),
 					user_manager(Sock)
 	end.
-
-
-
-
-
-
-
-
-
 
 acceptor(Port,LSock)->
 	{ok,Sock} = gen_tcp:accept(LSock),

@@ -1,5 +1,5 @@
 -module(game_state).
--export([new_state/5, calculate_state/2,create_player/3,alternate_propulsion/3,alternate_angular_propulsion/3, count_players/1]).
+-export([new_state/0, calculate_state/2,create_player/3,alternate_propulsion/3,alternate_angular_propulsion/3, count_players/1]).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -32,11 +32,11 @@ max_side_acceleration() ->
 pressed_propulsion() ->
 	5.
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-caculate_state(State,TimeDelta) ->
+calculate_state(State,TimeDelta) ->
+	io:format("STATE: ~p~n",[State]),
 	check_Overlaps(calculate_players(calculate_creatures(State,TimeDelta),TimeDelta),TimeDelta). %returns new state and [Deads]
 
 
@@ -51,22 +51,22 @@ new_map(Width, Height,RadMax, RadMin,Obst)->
 
 
 create_player(State,Pid,Radius) ->
-	if Radius < 1 -> Radius = min_Radius()*2 end,
+	%if Rad < 1 -> Radius = min_Radius()*2 end,
 	Info = #{},
-	Info = maps:put(pos,new_position(State,Radius),Info),
-	Info = maps:put(radius,Radius,Info),
-	Info = maps:put(direction,rand:uniform()*math:pi()*2,Info),
-	Info = maps:put(energy,100,Info),
-	Info = maps:put(velocity,min_velocity(),Info),
-	Info = maps:put(angular_velocity,0,Info),
-	Info = maps:put(fwd_acceleration,0,Info),
-	Info = maps:put(propulsion,0,Info),
-	Info = maps:put(side_acceleration,0,Info),
-	Info = maps:put(side_propulsion,0,Info),
-	Info = maps:put(points,0,Info),
-	Info = maps:put(is_boosting,false,Info),
-	Info = maps:put(is_angular_boosting,false,Info),
-	maps:put(Pid,Info,element(2,State)).
+	Info1 = maps:put(pos,new_position(State,Radius),Info),
+	Info2 = maps:put(radius,Radius,Info1),
+	Info3 = maps:put(direction,rand:uniform()*math:pi()*2,Info2),
+	Info4 = maps:put(energy,100,Info3),
+	Info5 = maps:put(velocity,min_velocity(),Info4),
+	Info6 = maps:put(angular_velocity,0,Info5),
+	Info7 = maps:put(fwd_acceleration,0,Info6),
+	Info8 = maps:put(propulsion,0,Info7),
+	Info9 = maps:put(side_acceleration,0,Info8),
+	Info0 = maps:put(side_propulsion,0,Info9),
+	Info10 = maps:put(points,0,Info0),
+	Info11 = maps:put(is_boosting,false,Info10),
+	Info12 = maps:put(is_angular_boosting,false,Info11),
+	{element(1,State),maps:put(Pid,Info12,element(2,State)),element(3,State)}.
 
 
 count_players(State) -> 
@@ -87,7 +87,7 @@ get_players(State) ->
 new_position(State, Radius) ->
 	{MapW,MapH,MapObs} = element(1,State),
 	Players_pos = [ {maps:get(pos,Player),maps:get(radius,Player)} || Player <- maps:values(element(2,State))],
-	Creatures_pos = [ {maps:get(pos,Creature),maps:get(radius,Creature)} || Creature <- maps:values(element(3,State))],
+	Creatures_pos = [ {maps:get(pos,Creature),maps:get(radius,Creature)} || Creature <- element(3,State)],
 	new_positionAux(State, lists:append(lists:append(Players_pos,Creatures_pos),MapObs), Radius).
 
 
@@ -108,12 +108,12 @@ new_positionAux(State,Positions,Radius) ->
 
 create_creature(State, Vel_Max, Vel_Min) ->
 	Info = #{},
-	Info = maps:put(type,rand:uniform(2)-1,Info),
-	Info = maps:put(pos,new_position(State,min_Radius()),Info),
-	Info = maps:put(radius,min_Radius(),Info),
-	Info = maps:put(direction,rand:uniform()*math:pi()*2,Info),
-	Info = maps:put(velocity,Vel_Min+rand:uniform()*(Vel_Max-Vel_Min),Info),
-	[Info | element(3,State)].
+	Info1 = maps:put(type,rand:uniform(2)-1,Info),
+	Info2 = maps:put(pos,new_position(State,min_Radius()),Info1),
+	Info3 = maps:put(radius,min_Radius(),Info2),
+	Info4 = maps:put(direction,rand:uniform()*math:pi()*2,Info3),
+	Info5 = maps:put(velocity,Vel_Min+rand:uniform()*(Vel_Max-Vel_Min),Info4),
+	[Info5 | element(3,State)].
 
 
 
@@ -141,46 +141,31 @@ calculate_creatures(State,TimeDelta) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Player
 
-
-
-calculate_player(State,Player,TimeDelta) -> 
-	Player = calculate_velocity(Player,TimeDelta),
-	Player = calculate_acceleration(Player,TimeDelta),
-	Player = calculate_propulsion(Player),
-	Player = calculate_angular_velocity(Player,TimeDelta),
-	Player = calculate_angular_acceleration(Player,TimeDelta),
-	Player = calculate_angular_propulsion(Player,TimeDelta),
-	% calculate_energy
-	environment_collision(State,Player,TimeDelta).
-
+calculate_angular_acceleration(Player,TimeDelta) -> 
+	Delta = maps:get(side_propulsion,Player),
+	Acc = (Delta*TimeDelta) + maps:get(side_acceleration,Player),
+	Acc1 = min(max(Acc, -1* max_side_acceleration()),max_side_acceleration()),
+	maps:put(side_acceleration,Acc1,Player).
 
 calculate_acceleration(Player,TimeDelta) -> 
 	Delta = maps:get(propulsion,Player),
-	Acc = (Delta*TimeDelta) + maps:get(acceleration,Player),
-	Acc = min(max(Acc, min_acceleration()),max_acceleration()),
-	maps:put(acceleration,Acc,Player).
+	Acc = (Delta*TimeDelta) + maps:get(fwd_acceleration,Player),
+	Acc1 = min(max(Acc, min_acceleration()),max_acceleration()),
+	maps:put(fwd_acceleration,Acc1,Player).
 
 
 
 calculate_velocity(Player,TimeDelta) ->
-	Acc = maps:get(acceleration,Player),
-	Vel = (Acc*TimeDelta) + maps:get(acceleration,Player),
-	Vel = min(max(Acc, min_velocity()),max_velocity(maps:get(radius,Player))),
-	maps:put(velocity,Vel,Player).
-
-
-calculate_side_acceleration(Player,TimeDelta) -> 
-	Delta = maps:get(side_propulsion,Player),
-	Acc = (Delta*TimeDelta) + maps:get(side_acceleration,Player),
-	Acc = min(max(Acc, -1* max_side_acceleration()),max_side_acceleration()),
-	maps:put(side_acceleration,Acc,Player).
-
+	Acc = maps:get(fwd_acceleration,Player),
+	Vel = (Acc*TimeDelta) + maps:get(fwd_acceleration,Player),
+	Vel1 = min(max(Acc, min_velocity()),max_velocity(maps:get(radius,Player))),
+	maps:put(velocity,Vel1,Player).
 
 calculate_angular_velocity(Player,TimeDelta) ->
 	Acc = maps:get(side_acceleration,Player),
 	Vel = (Acc*TimeDelta) + maps:get(angular_velocity,Player),
-	Vel = min(max(Acc, -1* max_ang_velocity()), max_ang_velocity()),
-	maps:put(angular_velocity,Vel,Player).
+	Vel1 = min(max(Acc, -1* max_ang_velocity()), max_ang_velocity()),
+	maps:put(angular_velocity,Vel1,Player).
 
 
 calculate_direction(Player,TimeDelta) ->
@@ -213,7 +198,7 @@ alternate_propulsion(Pid,State,KeyState) ->
 
 calculate_propulsion(Player) ->
 	Prop = maps:get(propulsion,Player),
-	Acc = maps:get(acceleration,Player),
+	Acc = maps:get(fwd_acceleration,Player),
 	M = min_acceleration(),
 	if
 		Acc > M + (0.01)  -> NewProp = Prop + math:sqrt(Acc);
@@ -232,7 +217,7 @@ alternate_angular_propulsion(Pid,State,Factor) ->
 
 
 
-calculate_angular_propulsion(Player) ->
+calculate_angular_propulsion(Player,TimeDelta) ->
 	Prop = maps:get(side_propulsion,Player),
 	Acc = maps:get(side_acceleration,Player),
 	if
@@ -243,28 +228,44 @@ calculate_angular_propulsion(Player) ->
 	maps:put(propulsion,NewProp,Player).
 
 
-
+calculate_player(State,Player,TimeDelta) -> 
+	Player0 = calculate_velocity(Player,TimeDelta),
+	Player1 = calculate_acceleration(Player0,TimeDelta),
+	Player2 = calculate_propulsion(Player1),
+	Player3 = calculate_angular_velocity(Player2,TimeDelta),
+	Player4 = calculate_angular_acceleration(Player3,TimeDelta),
+	Player5 = calculate_angular_propulsion(Player4,TimeDelta),
+	% calculate_energy
+	environment_collision(State,Player5,TimeDelta).
 
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Deslocamento
-
+%Problemas com direction pq single assignment
 environment_collision(State, Obj,TimeDelta)->
 	Radius = maps:get(radius,Obj),
 	Position = maps:get(pos,Obj),
 	Direction = maps:get(direction,Obj),
 	Velocity = maps:get(velocity,Obj),
 
-	{{New_x,New_y},Direction} = calculate_position(Position,Direction,Velocity,TimeDelta),
+	{{New_x,New_y},Direction1} = calculate_position(Position,Direction,Velocity,TimeDelta),
 	{MapW,MapH,Positions} = element(1,State),
 	B = lists:any((fun({{X,Y},Rad}) -> math:sqrt( math:pow(New_x-X,2) + math:pow(New_y-Y,2)) < (Rad+Radius) end),Positions),	
 	if
-		B -> {{New_x,New_y},Direction} = calculate_position(Position,invert_direction(Direction),Velocity,TimeDelta);
-		(New_x > (MapW - Radius)) or (New_x < Radius) or (New_y > (MapH - Radius)) or (New_y < Radius) -> {{New_x,New_y},Direction} = calculate_position(Position,invert_direction(Direction),Velocity,TimeDelta)
-	end,
-	maps:put(pos,{New_x,New_y},Obj), maps:put(direction,Direction,Obj),
-	Obj.	
+		B -> {{New_x1,New_y1},Direction2} = calculate_position(Position,invert_direction(Direction1),Velocity,TimeDelta),Obj1 = maps:put(pos,{New_x1,New_y1},Obj),
+	Obj2 = maps:put(direction,Direction2,Obj1),
+	Obj2;
+		(New_x > (MapW - Radius)) or (New_x < Radius) or (New_y > (MapH - Radius)) or (New_y < Radius) -> {{New_x1,New_y1},Direction2} = calculate_position(Position,invert_direction(Direction1),Velocity,TimeDelta),Obj1 = maps:put(pos,{New_x1,New_y1},Obj),
+	Obj2 = maps:put(direction,Direction2,Obj1),
+	Obj2;
+
+		true -> Obj1 = maps:put(pos,{New_x,New_y},Obj),
+				Obj2 = maps:put(direction,Direction1,Obj1),
+				Obj2
+	end.
+
+		
 
 
 
