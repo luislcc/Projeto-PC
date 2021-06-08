@@ -18,8 +18,11 @@ state_to_list(State) ->
 	{Map,Players,Creatures} = State,
 	{Width,Height,Obstacle_List} = Map,
 	Map_String = [integer_to_list(Width), "\n", integer_to_list(Height), "\n", integer_to_list(length(Obstacle_List)),"\n", obstacle_to_list(Obstacle_List)],
+	%io:format("MAP CONSTRUIDO: ~p~n",[Map_String]),
 	Player_String = [integer_to_list(maps:size(Players)),"\n",player_to_list(Players)],
+	%io:format("PLAYERS CONSTRUIDOS ~p~n",[Player_String]),
 	Creature_String = [integer_to_list(length(Creatures)),"\n",creature_to_list(Creatures)],
+	%io:format("Creatures CONSTRUIDAS ~p~n",[Creature_String]),
 	[Map_String,Player_String,Creature_String].
 
 obstacle_to_list(Obstacle_List)->             
@@ -30,7 +33,7 @@ player_to_list(Players)->
 	[[pid_to_list(P),"\n",float_to_list(element(1,maps:get(pos,M))),"\n",float_to_list(element(2,maps:get(pos,M))),"\n",integer_to_list(maps:get(radius,M)),"\n",float_to_list( maps:get(direction,M)),"\n"] || {P,M} <- L ].
 
 creature_to_list(Creatures)->
-	[[integer_to_list(T),"\n",float_to_list(X),"\n",float_to_list(Y),"\n",float_to_list(R),"\n",float_to_list(D),"\n"] || M <- Creatures, T <- maps:get(type,M), X <- element(1,maps:get(pos,M)), Y <- element(2,maps:get(pos,M)),R <- maps:get(radius,M), D <- maps:get(direction,M)].
+	[[integer_to_list(maps:get(type,M)),"\n",float_to_list(element(1,maps:get(pos,M))),"\n",float_to_list(element(2,maps:get(pos,M))),"\n",float_to_list(maps:get(radius,M)),"\n",float_to_list(maps:get(direction,M)),"\n"] || M <- Creatures].
 
 
 user(Sock,Username)->
@@ -41,9 +44,8 @@ user(Sock,Username)->
 						 	login_manager ! {create_account,self(),Username},
 						 	user(Sock,Username);
 
-					["update"] ->
+					["join"] ->
 							game_manager ! {join,self()},
-							io:format("Hello~n"),
 							user(Sock,Username);
 				
 					["online"] ->
@@ -51,11 +53,20 @@ user(Sock,Username)->
 							user(Sock,Username)
 				end;
 
-		{update,State,game_manager} -> io:format("USER RECEBEU~n"), gen_tcp:send(Sock,list_to_binary("update\n" ++ state_to_list(State))),user(Sock,Username);
+		{update,State,game_manager} -> gen_tcp:send(Sock,list_to_binary(["update\n",state_to_list(State)])),user(Sock,Username);
 
-		
+		{joined_game,game} -> gen_tcp:send(Sock,list_to_binary("game started\n")),user(Sock,Username);
+
+		{left_game,game_manager} -> gen_tcp:send(Sock,list_to_binary("left game\n")),user(Sock,Username);
+
+		{dead,game_manager} -> gen_tcp:send(Sock,list_to_binary(["dead\n",pid_to_list(self()),"\n"])),user(Sock,Username);
+
+		{enqueued,game_manager} -> gen_tcp:send(Sock,list_to_binary("enqueued\n")),user(Sock,Username);
+
+		{left_queue,game_manager} -> gen_tcp:send(Sock,list_to_binary("left queue\n")),user(Sock,Username);
+
 		{valid_logout,login_manager} ->
-					gen_tcp:send(Sock,list_to_binary("valid logout\n")),
+					gen_tcp:send(Sock,list_to_binary("logged out\n")),
 					user_manager(Sock);
 			
 		{online,Online_users,login_manager} ->

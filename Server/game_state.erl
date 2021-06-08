@@ -6,7 +6,7 @@
 % Constantes
 
 max_velocity(Radius) ->
-	10 + 50/Radius.
+	min_velocity() + 50/Radius.
 
 min_velocity() ->
 	10.
@@ -36,7 +36,7 @@ pressed_propulsion() ->
 
 
 calculate_state(State,TimeDelta) ->
-	io:format("STATE: ~p~n",[State]),
+	%io:format("STATE: ~p~n",[State]),
 	check_Overlaps(calculate_players(calculate_creatures(State,TimeDelta),TimeDelta),TimeDelta). %returns new state and [Deads]
 
 
