@@ -123,16 +123,29 @@ create_creature(State, Vel_Max, Vel_Min) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
 % Overlaps between entities
 
-check_Overlaps(State,TimeDelta) -> 
+check_Overlaps(StateDeads,TimeDelta) ->
+	{State,Deads} = StateDeads,
+	{Map,Players,Creatures} = State,
+	Aux = maps:to_list(Players),
+	NewPlayers = [ {Pid,calculate_overlap_player(State,Player,TimeDelta)} || {Pid,Player} <- Aux],
 	{State,[]}.
 
+check_Overlaps_aux(Players,Creatures)->
+	if
+		length(Players) == 0 ->	{Players,Creatures};
 
+		true -> [H | T] = Players, {NewPlayer,NewPlayers,NewCreatures} = overlap(H,T,Creatures),
+		 {ResPlayers,ResCreatures} = check_Overlaps_aux(NewPlayers,NewCreatures), {[NewPlayer | ResPlayers],ResCreatures}
+								
+	end.
 
+overlap(Player,Players,Creatures)->
+	[]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Creatures
 calculate_creatures(State,TimeDelta) ->
 	{A,B,Creatures} = State,
-	NewCreatures = [ environment_collision(State,Obj,TimeDelta) || Obj <- Creatures],
+	NewCreatures = [ element(1,environment_collision(State,Obj,TimeDelta)) || Obj <- Creatures],
 	{A,B,NewCreatures}.
 
 
@@ -180,7 +193,9 @@ calculate_players(State,TimeDelta) ->
 	{A,Players,C} = State,
 	Aux = maps:to_list(Players),
 	NewPlayers = [ {Pid,calculate_player(State,Player,TimeDelta)} || {Pid,Player} <- Aux],
-	{A,maps:from_list(NewPlayers),C}.
+	DeadPlayers = [X || {X,{Y,Z}} <- NewPlayers, Z == true],
+	ResPlayers = [{X,Y} || {X,{Y,Z}} <- NewPlayers, Z == false],
+	{{A,maps:from_list(ResPlayers),C},DeadPlayers}.
 
 
 
@@ -255,14 +270,15 @@ environment_collision(State, Obj,TimeDelta)->
 	if
 		B -> {{New_x1,New_y1},Direction2} = calculate_position(Position,invert_direction(Direction1),Velocity,TimeDelta),Obj1 = maps:put(pos,{New_x1,New_y1},Obj),
 	Obj2 = maps:put(direction,Direction2,Obj1),
-	Obj2;
+	{Obj2,Radius < min_Radius()+ 0.01};
+
 		(New_x > (MapW - Radius)) or (New_x < Radius) or (New_y > (MapH - Radius)) or (New_y < Radius) -> {{New_x1,New_y1},Direction2} = calculate_position(Position,invert_direction(Direction1),Velocity,TimeDelta),Obj1 = maps:put(pos,{New_x1,New_y1},Obj),
 	Obj2 = maps:put(direction,Direction2,Obj1),
-	Obj2;
+	{Obj2,Radius < min_Radius()+ 0.01};
 
 		true -> Obj1 = maps:put(pos,{New_x,New_y},Obj),
 				Obj2 = maps:put(direction,Direction1,Obj1),
-				Obj2
+				{Obj2,false}
 	end.
 
 		
