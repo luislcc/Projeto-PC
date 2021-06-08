@@ -62,9 +62,7 @@ class GameArea{
   public Player receivePlayer(BufferedReader b){
     try{
       Float posX = Float.parseFloat(b.readLine());
-      System.out.println("POSX = " + posX);
       Float posY = Float.parseFloat(b.readLine());
-       System.out.println("POSY = " + posY);
       Float radius = Float.parseFloat(b.readLine());
       Float direction = Float.parseFloat(b.readLine());
       return new Player(posX,posY,radius,direction);

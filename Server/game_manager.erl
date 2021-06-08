@@ -25,7 +25,9 @@ loop(Players,Queue)->
 
 		{died,Pid,game} -> Pid!{dead,game_manager}, loop((Players -- [Pid]), Queue),loop(Players,Queue);
 
-		{update_state,State,game} -> [Pid ! {update,State,game_manager} || Pid <- Players], loop(Players,Queue);
+		{update,Pid} -> game ! {update,Pid,game_manager}, loop(Players,Queue);
+
+		{update_state,State,Pid,game} -> Pid ! {update,State,game_manager}, loop(Players,Queue);
 		
 		{leave,Pid} -> Pid!{left_queue,game_manager}, loop(Players,queue:delete(Pid,Queue))
 	end.
@@ -42,7 +44,7 @@ join_game(Pid) ->
 game_instance(State, Timestamp) ->
 	%timer:sleep(1),
 	TimeNow = erlang:timestamp(),
-	TimeDelta = timer:now_diff(TimeNow, Timestamp) / math:pow(10,3),
+	TimeDelta = timer:now_diff(TimeNow, Timestamp) / math:pow(10,6),
 	%io:format("TIMEDELTA: ~p~n",[TimeDelta]),
 	{NewState,Deads} = game_state:calculate_state(State,TimeDelta),
 	
@@ -56,6 +58,7 @@ game_instance(State, Timestamp) ->
 	receive
 		{w_press,Pid} -> game_instance(game_state:alternate_propulsion(Pid,NewState,true),TimeNow);
 		{w_release,Pid} -> game_instance(game_state:alternate_propulsion(Pid,NewState,false),TimeNow);
+		{update,Pid,game_manager} -> ?MODULE ! {update_state,NewState,Pid,game};
 		
 		{a_press,Pid} -> game_instance(game_state:alternate_angular_propulsion(Pid,NewState,(-1)),TimeNow);
 		{a_release,Pid} -> game_instance(game_state:alternate_angular_propulsion(Pid,NewState,(1)),TimeNow);
@@ -70,7 +73,7 @@ game_instance(State, Timestamp) ->
 	end,
 
 	[?MODULE ! {died,Dead,game} || Dead <- Deads],
-	?MODULE ! {update_state,NewState,game},
+	%?MODULE ! {update_state,NewState,game},
 	%game_state:print_stt(State),
 	game_instance(NewState,TimeNow).
 

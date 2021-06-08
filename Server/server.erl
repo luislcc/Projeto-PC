@@ -47,10 +47,16 @@ user(Sock,Username)->
 					["join"] ->
 							game_manager ! {join,self()},
 							user(Sock,Username);
+
+					["update"] ->
+							game_manager ! {update,self()},
+							user(Sock,Username);
 				
 					["online"] ->
 							login_manager ! {online,self()},
-							user(Sock,Username)
+							user(Sock,Username);
+
+					_ -> user(Sock,Username)
 				end;
 
 		{update,State,game_manager} -> gen_tcp:send(Sock,list_to_binary(["update\n",state_to_list(State)])),user(Sock,Username);
@@ -73,7 +79,9 @@ user(Sock,Username)->
 					X = string:join(Online_users," "),
 					Y = X ++ "\n",
 					gen_tcp:send(Sock,list_to_binary(Y)),
-					user_manager(Sock)
+					user_manager(Sock);
+
+		_ -> user(Sock,Username)
 	end.
 
 

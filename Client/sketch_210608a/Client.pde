@@ -29,7 +29,7 @@ class Client{
     this.gameReader.start();
   }
   
-  public void goRead(){
+  public void receiveState(){
     this.gameArea.receiveState(this.b);
   }
 
