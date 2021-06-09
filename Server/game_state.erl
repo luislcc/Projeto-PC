@@ -312,6 +312,115 @@ print_stt(State) ->
 
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+check_Overlaps(StateDeads) ->
+	{State,Deads} = StateDeads,
+	{Map,Players,Creatures} = State,
+	{NewPlayers,NewCreatures,NewDeads} = check_Overlaps_aux(Players,Creatures,Deads),
+	{{Map,NewPlayers,NewCreatures},NewDeads}.
+
+
+check_Overlaps_Aux(Players,Creatures,Deads) ->
+	if
+		(length(Players) < 1) -> {Players,Creatures,Deads};
+		true -> [H | T] = Players, {P,C,D} = check_Overlaps_aux(T,Creatures,Deads), overlaps_player(H,Players,Creatures,Deads)
+	end.
+
+
+
+overlap_player_player(PlayerA, PlayerB) -> % -1 se ocorreu a colisão e o player B comeu A, 0 se elastica, 1 se A comeu B, 2 se não houve colisão
+	{Xa,Ya} = map:get(pos,PlayerA),
+	{Xb,Yb} = map:get(pos,PlayerB),
+	Ra =  map:get(radius,PlayerA),
+	Rb =  map:get(radius,PlayerB),
+	Dist = distance(Xa,Ya,Xb,Yb),
+	if
+		Dist < Ra when (Rb - Ra < 0.01) and (Rb - Ra > (- 0.01)) -> (0);
+		Dist < Ra when Ra > Rb -> (-1);
+		Dist < Rb when Rb > Ra -> (1);
+		true -> 2
+		
+	end.
+
+
+
+
+overlap_player_creature(Player,Creature) -> % true se comeu
+	{Xa,Ya} = map:get(pos,PlayerA),
+	{Xb,Yb} = map:get(pos,Creature),
+	Ra =  map:get(radius,PlayerA),
+	Dist = distance(Xa,Ya,Xb,Yb),
+	Dist <= Ra.
+
+
+
+overlaps_player(PlayerAInfo,Players,Creatures,Deads) ->
+	{Pid,PlayerA} = PlayerAInfo,
+	if
+		lists:any(fun(el) -> el == Pid end, Deads) -> {Players,Creatures,Deads}
+	end,
+	Overlaps_players = [{PidB,PlayerB,overlap_player_player(PlayerA,PlayerB)} || {PidB,PlayerB} <- maps:to_list(Players), PidB != Pid],
+	Eaten_by = [Pid || {Pid,PlayerB,Cond} <- Overlaps_players, Cond == -1],
+	Has_Eaten = [{Pid,PlayerB} || {Pid,PlayerB,Cond} <- Overlaps_players, Cond == 1],
+	Has_no_Over = [{Pid,PlayerB} || {Pid,PlayerB,Cond} <- Overlaps_players, Cond == 2],
+	Elastic = [{Pid,PlayerB} || {Pid,PlayerB,Cond} <- Overlaps_players, Cond == 0],
+	Creatures_Eaten = [ maps:get(type,Creature) || Creature <- Creatures, overlap_player_creature(PlayerA,Creature)],
+	Creatures_not_Eaten = [ Creature || Creature <- Creatures, not overlap_player_creature(PlayerA,Creature)],
+	All_buffs = Creatures_Eaten ++ Has_Eaten
+
+	if
+		lists:any(fun(el) -> true end, Eaten_by) -> {[{PidB,buff_player(PlayerB,[2])}| [{PidK,PlayerK} || {PidK,PlayerK,CondK} <- Overlaps_players, PidK != PidB]],Creatures,[Pid]};
+		true -> {changes(Elastic,All_buffs,Has_no_Over,PlayerAInfo) , Creatures_not_Eaten, [PidK || {PidK,PlayerK} <- Has_Eaten]},
+	end.
+
+
+
+changes(Elastic,All_buffs,Has_no_Over,PlayerAInfo) ->
+	Res = [{Pid, invert_player_direction(Player)} ||  {Pid,Player} <- Elastic],
+	Res2 = Res ++ Has_no_Over,
+	{PidA,PlayerA} = PlayerAInfo,
+	Res3 = [{PidA,buff_player(PlayerA,All_buffs)}| Res2].
+
+
+
+
+invert_player_direction(Player) ->
+	Dir = maps:get(direction,Player),
+	maps:put(direction,invert_direction(Dir),Player).
+
+
+
+buff_player(Player,Buffs) -> %
+	if
+		(length(Buffs) == 0 ) -> Player;
+
+		true -> [H | T] = Buffs, apply_buffer(buff_player(Player,T),H);		
+	end.
+
+
+apply_buffer(Player,Buff) ->
+	Rad = maps:get(radius,Player),
+	Pts = maps:get(points,Player),
+	Jk = maps:get(propulsion,Player),
+	if
+		(Buff == 0) -> P2 = maps:put(radius,min(Rad+increment(),max_Radius()),Player), maps:put(propulsion,Jk+jk_increment(),P2); %good 
+		
+		(Buff == 1) -> maps:put(propulsion,Jk-jk_increment(),Player); %bad
+		
+		true -> P2 = maps:put(radius,min(Rad+increment(),max_Radius()),Player), P3 = maps:put(propulsion,Jk-jk_increment(),P2), maps:put(propulsion,Pts+1,P3) %player
+	end.
+
+increment() ->
+	1.
+
+jk_increment() ->
+	5.
+
+
+distance(Xa,Ya,Xb,Yb) ->
+	math:sqrt((Xa-Xb)*(Xa-Xb) + (Ya-Yb)*(Ya-Yb)).
+
 
 %mapa
 	%obstaculos
