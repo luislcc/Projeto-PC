@@ -7,8 +7,11 @@ import java.util.concurrent.locks.*;
 
 class Client{
   private Socket s;
+  public String username;
+  public String password;
   public ReentrantLock l = new ReentrantLock();
   public boolean okDraw;
+  public int menu;
   final Condition okDrawCond = l.newCondition();
   private BufferedReader b;
   private GameReader gameReader;
@@ -17,6 +20,9 @@ class Client{
   Client(String ipAdress,int portNumber){
     try{
       this.okDraw = false;
+      this.menu = 0;
+      this.username = "";
+      this.password = "";
     this.s = new Socket(ipAdress,portNumber);
     this.b = new BufferedReader( new InputStreamReader(this.s.getInputStream())); // JAVA <3
     this.gameArea = new GameArea(1000,600);
@@ -41,14 +47,24 @@ class Client{
     }
     catch(Exception e){}
   }
+  
+  public void setGameMenu(){
+    this.menu = 1;
+  }
+  
+  public void setClientMenu(){
+    this.menu = 2;
+  }
 
-  public void receive(){
+  public String receive(){
+    String s = "";
     try{
 
-      String s = this.b.readLine();
+       s = this.b.readLine();
       System.out.println(s);
     }
     catch(Exception e){System.out.println(e.toString());}
+    return s;
   }
 
   

@@ -36,8 +36,8 @@ pressed_propulsion() ->
 
 
 calculate_state(State,TimeDelta) ->
-	%io:format("STATE: ~p~n",[State]),
-	check_Overlaps(calculate_players(calculate_creatures(State,TimeDelta),TimeDelta),TimeDelta). %returns new state and [Deads]
+	%io:format("STATE: ~p~n",[calculate_players(calculate_creatures(State,TimeDelta),TimeDelta)]),
+	check_Overlaps(calculate_players(calculate_creatures(State,TimeDelta),TimeDelta)). %returns new state and [Deads]
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -123,24 +123,25 @@ create_creature(State, Vel_Max, Vel_Min) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
 % Overlaps between entities
 
-check_Overlaps(StateDeads,TimeDelta) ->
-	{State,Deads} = StateDeads,
-	{Map,Players,Creatures} = State,
-	Aux = maps:to_list(Players),
-	NewPlayers = [ {Pid,calculate_overlap_player(State,Player,TimeDelta)} || {Pid,Player} <- Aux],
-	{State,[]}.
 
-check_Overlaps_aux(Players,Creatures)->
-	if
-		length(Players) == 0 ->	{Players,Creatures};
+%check_Overlaps(StateDeads,TimeDelta) ->
+%	{State,Deads} = StateDeads,
+%	{Map,Players,Creatures} = State,
+%	Aux = maps:to_list(Players),
+%	NewPlayers = [ {Pid,calculate_overlap_player(State,Player,TimeDelta)} || {Pid,Player} <- Aux],
+%	{State,[]}.
 
-		true -> [H | T] = Players, {NewPlayer,NewPlayers,NewCreatures} = overlap(H,T,Creatures),
-		 {ResPlayers,ResCreatures} = check_Overlaps_aux(NewPlayers,NewCreatures), {[NewPlayer | ResPlayers],ResCreatures}
-								
-	end.
+%check_Overlaps_aux(Players,Creatures)->
+%	if
+%		length(Players) == 0 ->	{Players,Creatures};
+%
+%		true -> [H | T] = Players, {NewPlayer,NewPlayers,NewCreatures} = overlap(H,T,Creatures),
+%		 {ResPlayers,ResCreatures} = check_Overlaps_aux(NewPlayers,NewCreatures), {[NewPlayer | ResPlayers],ResCreatures}
+%								
+%	end.
 
-overlap(Player,Players,Creatures)->
-	[]
+%overlap(Player,Players,Creatures)->
+%	[].
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Creatures
 calculate_creatures(State,TimeDelta) ->
@@ -317,14 +318,18 @@ print_stt(State) ->
 check_Overlaps(StateDeads) ->
 	{State,Deads} = StateDeads,
 	{Map,Players,Creatures} = State,
-	{NewPlayers,NewCreatures,NewDeads} = check_Overlaps_aux(Players,Creatures,Deads),
-	{{Map,NewPlayers,NewCreatures},NewDeads}.
+	%io:format("PLAYERS: ~p~n",[Players]),
+	K = is_map(Players),
+	%io:format("IS MAP: ~p~n",[K]),
+	ListPlayers = maps:to_list(Players),
+	{NewListPlayers,NewCreatures,NewDeads} = check_Overlaps_Aux(ListPlayers,Creatures,Deads),
+	{{Map,maps:from_list(NewListPlayers),NewCreatures},NewDeads}.
 
 
 check_Overlaps_Aux(Players,Creatures,Deads) ->
 	if
 		(length(Players) < 1) -> {Players,Creatures,Deads};
-		true -> [H | T] = Players, {P,C,D} = check_Overlaps_aux(T,Creatures,Deads), overlaps_player(H,Players,Creatures,Deads)
+		true -> [H | T] = Players, {P,C,D} = check_Overlaps_Aux(T,Creatures,Deads), overlaps_player(H,maps:from_list(Players),Creatures,Deads)
 	end.
 
 
@@ -336,9 +341,9 @@ overlap_player_player(PlayerA, PlayerB) -> % -1 se ocorreu a colisão e o player
 	Rb =  map:get(radius,PlayerB),
 	Dist = distance(Xa,Ya,Xb,Yb),
 	if
-		Dist < Ra when (Rb - Ra < 0.01) and (Rb - Ra > (- 0.01)) -> (0);
-		Dist < Ra when Ra > Rb -> (-1);
-		Dist < Rb when Rb > Ra -> (1);
+		(Dist < Ra) and (Rb - Ra < 0.01) and (Rb - Ra > (- 0.01)) -> (0);
+		(Dist < Ra) and (Ra > Rb) -> (-1);
+		(Dist < Rb) and (Rb > Ra) -> (1);
 		true -> 2
 		
 	end.
@@ -347,31 +352,44 @@ overlap_player_player(PlayerA, PlayerB) -> % -1 se ocorreu a colisão e o player
 
 
 overlap_player_creature(Player,Creature) -> % true se comeu
-	{Xa,Ya} = map:get(pos,PlayerA),
+	{Xa,Ya} = map:get(pos,Player),
 	{Xb,Yb} = map:get(pos,Creature),
-	Ra =  map:get(radius,PlayerA),
+	Ra =  map:get(radius,Player),
 	Dist = distance(Xa,Ya,Xb,Yb),
-	Dist <= Ra.
+	Dist =< Ra.
 
 
 
 overlaps_player(PlayerAInfo,Players,Creatures,Deads) ->
 	{Pid,PlayerA} = PlayerAInfo,
+	K = is_map(Players),
+	%io:format("IS MAP PLAYERS: ~p~n",[K]),
+	G = is_map(PlayerA),
+	%io:format("IS MAP: ~p~n",[G]),
+
+	B = lists:any(fun(K) -> K == Pid end, Deads),
 	if
-		lists:any(fun(el) -> el == Pid end, Deads) -> {Players,Creatures,Deads}
+		 B -> {Players,Creatures,Deads};
+		 true -> I = 3  %miguezão
 	end,
-	Overlaps_players = [{PidB,PlayerB,overlap_player_player(PlayerA,PlayerB)} || {PidB,PlayerB} <- maps:to_list(Players), PidB != Pid],
+	Overlaps_players = [{PidB,PlayerB,overlap_player_player(PlayerA,PlayerB)} || {PidB,PlayerB} <- maps:to_list(Players), PidB /= Pid],
 	Eaten_by = [Pid || {Pid,PlayerB,Cond} <- Overlaps_players, Cond == -1],
 	Has_Eaten = [{Pid,PlayerB} || {Pid,PlayerB,Cond} <- Overlaps_players, Cond == 1],
 	Has_no_Over = [{Pid,PlayerB} || {Pid,PlayerB,Cond} <- Overlaps_players, Cond == 2],
 	Elastic = [{Pid,PlayerB} || {Pid,PlayerB,Cond} <- Overlaps_players, Cond == 0],
 	Creatures_Eaten = [ maps:get(type,Creature) || Creature <- Creatures, overlap_player_creature(PlayerA,Creature)],
 	Creatures_not_Eaten = [ Creature || Creature <- Creatures, not overlap_player_creature(PlayerA,Creature)],
-	All_buffs = Creatures_Eaten ++ Has_Eaten
-
+	All_buffs = Creatures_Eaten ++ Has_Eaten,
+	
+	D = length(Eaten_by) > 0,
+	C = lists:any(fun(El) -> true end, Eaten_by),
+	%Nao tenho a certeza se PidB = Pid
 	if
-		lists:any(fun(el) -> true end, Eaten_by) -> {[{PidB,buff_player(PlayerB,[2])}| [{PidK,PlayerK} || {PidK,PlayerK,CondK} <- Overlaps_players, PidK != PidB]],Creatures,[Pid]};
-		true -> {changes(Elastic,All_buffs,Has_no_Over,PlayerAInfo) , Creatures_not_Eaten, [PidK || {PidK,PlayerK} <- Has_Eaten]},
+		D and C -> [PidB | T] = Eaten_by,
+				   PlayerB = maps:get(PidB,Players),
+			{[{PidB,buff_player(PlayerB,[2])}| [{PidK,PlayerK} || {PidK,PlayerK,CondK} <- Overlaps_players, PidK /= PidB]],Creatures,[Pid]};
+		
+		true -> {changes(Elastic,All_buffs,Has_no_Over,PlayerAInfo) , Creatures_not_Eaten, [PidK || {PidK,PlayerK} <- Has_Eaten]}
 	end.
 
 
@@ -395,7 +413,7 @@ buff_player(Player,Buffs) -> %
 	if
 		(length(Buffs) == 0 ) -> Player;
 
-		true -> [H | T] = Buffs, apply_buffer(buff_player(Player,T),H);		
+		true -> [H | T] = Buffs, apply_buffer(buff_player(Player,T),H)	
 	end.
 
 
