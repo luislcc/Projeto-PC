@@ -1,5 +1,5 @@
 -module(game_state).
--export([new_state/0, calculate_state/2,create_player/3,alternate_propulsion/3,alternate_angular_propulsion/3, count_players/1,get_points/1]).
+-export([new_state/0, calculate_state/3,create_player/4,alternate_propulsion/3,alternate_angular_propulsion/3, count_players/1,get_points/1]).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -9,6 +9,9 @@ max_velocity(Radius) ->
 	min_velocity() + 50/Radius.
 
 min_velocity() ->
+	10.
+
+max_creatures() ->
 	10.
 
 max_acceleration() ->
@@ -41,9 +44,18 @@ get_points(State) ->
 	[{maps:get(username,Player), maps:get(points,Player)} || {Pid,Player} <- ListPlayers].
 
 
-calculate_state(State,TimeDelta) ->
-	%io:format("STATE: ~p~n",[calculate_players(calculate_creatures(State,TimeDelta),TimeDelta)]),
-	check_Overlaps(calculate_players(calculate_creatures(State,TimeDelta),TimeDelta)). %returns new state, [Deads]
+calculate_state(State,TimeDelta,TimeStampCreatures) ->	
+	{State1,Deads} = check_Overlaps(calculate_players(calculate_creatures(State,TimeDelta),TimeDelta)), %returns new state, [Deads]
+	Prob = rand:uniform()*100,
+	MaxC = max_creatures(),
+	TimeDeltaCreatures = timer:now_diff(erlang:timestamp(),TimeStampCreatures),
+	if
+		(Prob < 1) and (TimeDeltaCreatures > 1000000) and (length(element(3,State)) < MaxC)-> NumberOfCreatures = 1,
+					 NewState = create_creatures(State1,NumberOfCreatures),
+					 {NewState,Deads,erlang:timestamp()};
+
+		true -> {State1,Deads,TimeStampCreatures}
+	end. 
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -73,7 +85,7 @@ create_player(State,Pid,Radius,Username) ->
 	Info11 = maps:put(is_boosting,false,Info10),
 	Info12 = maps:put(is_angular_boosting,false,Info11),
 	Info13 = maps:put(username,Username,Info12),
-	{element(1,State),maps:put(Pid,Info12,element(2,State)),element(3,State)}.
+	{element(1,State),maps:put(Pid,Info13,element(2,State)),element(3,State)}.
 
 
 count_players(State) -> 
@@ -111,9 +123,14 @@ new_positionAux(State,Positions,Radius) ->
 		true ->  {New_x,New_y}
 	end.
 
+create_creatures(State,Number)->
+	if
+		Number == 0 -> State;
 
+		true -> create_creatures(create_creature(State),Number-1)
+	end.
 
-create_creature(State, Vel_Max, Vel_Min) ->
+create_creature(State) ->
 	Info = #{},
 	Info1 = maps:put(type,rand:uniform(2)-1,Info),
 	Info2 = maps:put(pos,new_position(State,min_Radius()),Info1),
@@ -123,6 +140,10 @@ create_creature(State, Vel_Max, Vel_Min) ->
 	Info6 = maps:put(velocity_ang,Vel_Min+rand:uniform()*(Vel_Max-Vel_Min),Info5),
 	Info7 = maps:put(accel_ang,(Vel_Min+rand:uniform()*(Vel_Max-Vel_Min))/20,Info6),
 	[Info7 | element(3,State)].
+	Info5 = maps:put(velocity,min_velocity()+rand:uniform()*(max_velocity(min_Radius())-min_velocity()),Info4),
+	{Map,Players,Creatures} = State,
+	{Map,Players,[Info5 | Creatures]}. 
+
 
 
 
@@ -345,10 +366,10 @@ check_Overlaps_Aux(Players,Creatures,Deads) ->
 
 
 overlap_player_player(PlayerA, PlayerB) -> % -1 se ocorreu a colisão e o player B comeu A, 0 se elastica, 1 se A comeu B, 2 se não houve colisão
-	{Xa,Ya} = map:get(pos,PlayerA),
-	{Xb,Yb} = map:get(pos,PlayerB),
-	Ra =  map:get(radius,PlayerA),
-	Rb =  map:get(radius,PlayerB),
+	{Xa,Ya} = maps:get(pos,PlayerA),
+	{Xb,Yb} = maps:get(pos,PlayerB),
+	Ra =  maps:get(radius,PlayerA),
+	Rb =  maps:get(radius,PlayerB),
 	Dist = distance(Xa,Ya,Xb,Yb),
 	if
 		(Dist < Ra) and (Rb - Ra < 0.01) and (Rb - Ra > (- 0.01)) -> (0);
@@ -362,9 +383,10 @@ overlap_player_player(PlayerA, PlayerB) -> % -1 se ocorreu a colisão e o player
 
 
 overlap_player_creature(Player,Creature) -> % true se comeu
-	{Xa,Ya} = map:get(pos,Player),
-	{Xb,Yb} = map:get(pos,Creature),
-	Ra =  map:get(radius,Player),
+	%io:format("PLAYER: ~p~n",[Player]),
+	{Xa,Ya} = maps:get(pos,Player),
+	{Xb,Yb} = maps:get(pos,Creature),
+	Ra =  maps:get(radius,Player),
 	Dist = distance(Xa,Ya,Xb,Yb),
 	Dist =< Ra.
 

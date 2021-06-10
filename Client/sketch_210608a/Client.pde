@@ -24,7 +24,7 @@ class Client{
       this.username = "";
       this.password = "";
     this.s = new Socket(ipAdress,portNumber);
-    this.b = new BufferedReader( new InputStreamReader(this.s.getInputStream())); // JAVA <3
+    this.b = new BufferedReader( new InputStreamReader(this.s.getInputStream())); 
     this.gameArea = new GameArea(1000,600);
     }
     catch(Exception e){}
