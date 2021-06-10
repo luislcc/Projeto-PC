@@ -61,6 +61,7 @@ class MainMenu{
          this.typing = "";
          this.c.send("create " + this.c.username + " " + this.c.password + "\n");
          this.c.receive();
+         System.out.println(this.c.password);
      }
      
      else if(key == '\n' && this.c.username.length() > 0 && this.state == 2){

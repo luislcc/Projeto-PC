@@ -17,7 +17,7 @@ server(Port)->
 leaderboard_to_list(Leaderboard) ->
 	ListLeaderboard = maps:to_list(Leaderboard),
 	K = [[Username,"\n",integer_to_list(Points),"\n"] || {Username,Points} <- ListLeaderboard],
-	io:format("LEADERBOARD CONSTRUIDA: ~p~n",[K]),
+	%io:format("LEADERBOARD CONSTRUIDA: ~p~n",[K]),
 	K.
 
 state_to_list(State) ->
@@ -52,6 +52,30 @@ user(Sock,Username)->
 
 					["join"] ->
 							game_manager ! {join,self(),Username},
+							user(Sock,Username);
+
+					["w_press"] ->
+							game_manager ! {w_press,self()},
+							user(Sock,Username);
+
+					["w_release"] ->
+							game_manager ! {w_release,self()},
+							user(Sock,Username);
+
+					["a_press"] ->
+							game_manager ! {a_press,self()},
+							user(Sock,Username);
+
+					["a_release"] ->
+							game_manager ! {a_release,self()},
+							user(Sock,Username);
+
+					["d_press"] ->
+							game_manager ! {d_press,self()},
+							user(Sock,Username);
+
+					["d_release"] ->
+							game_manager ! {d_release,self()},
 							user(Sock,Username);
 
 					["update"] ->

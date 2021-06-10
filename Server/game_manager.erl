@@ -31,7 +31,13 @@ loop(LeaderBoard,Players,Queue)->
 		
 		{points,GamePoints,game} -> loop(update_points(LeaderBoard,GamePoints),Players,Queue);
 
-		{leave,Pid} -> Pid!{left_queue,game_manager}, loop(LeaderBoard,Players,queue:delete(Pid,Queue))
+		{leave,Pid} -> Pid!{left_queue,game_manager}, loop(LeaderBoard,Players,queue:delete(Pid,Queue));
+
+		{w_press,Pid} -> game ! {w_press,Pid}, loop(LeaderBoard,Players,Queue);
+
+		{a_press,Pid} -> game ! {a_press,Pid}, loop(LeaderBoard,Players,Queue);
+
+		{d_press,Pid} -> game ! {d_press,Pid}, loop(LeaderBoard,Players,Queue)
 	end.
 
 

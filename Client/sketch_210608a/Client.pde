@@ -12,6 +12,8 @@ class Client{
   public ReentrantLock l = new ReentrantLock();
   public boolean okDraw;
   public int menu;
+  public char keyPressed;
+  public char keyReleased;
   final Condition okDrawCond = l.newCondition();
   private BufferedReader b;
   private GameReader gameReader;
@@ -19,8 +21,10 @@ class Client{
 
   Client(String ipAdress,int portNumber){
     try{
-      this.okDraw = false;
+      this.okDraw = true;
       this.menu = 0;
+      this.keyPressed='T';
+      this.keyReleased='T';
       this.username = "";
       this.password = "";
     this.s = new Socket(ipAdress,portNumber);
@@ -62,6 +66,7 @@ class Client{
 
        s = this.b.readLine();
       System.out.println(s);
+      //System.out.println("HEYY " + s);
     }
     catch(Exception e){System.out.println(e.toString());}
     return s;

@@ -10,14 +10,7 @@ void setup(){
   
   mainMenu = new MainMenu(c);
   clientMenu = new ClientMenu(c);
-  //c.send("create frango assado\n");
-  //c.receive();
-  //c.send("login frango assado\n");
-  //c.receive();
-  //c.send("join\n");
-  //c.receive();
-  //c.send("update\n");
-  //c.startGameReader();
+  c.startGameReader();
 }
 
 void draw(){
@@ -34,27 +27,102 @@ void draw(){
        clientMenu.draw();
     }
     
-    else if(c.menu == 1){
-    c.receiveState();
+    else if(c.menu == 1){  //game draw
+    try{
+      c.l.lock();
+    while(!c.okDraw) c.okDrawCond.await();
     c.gameArea.draw();
-    c.send("update\n");
+    c.okDraw = false;
+    }catch(Exception e) {}
+    finally{
+      c.okDrawCond.signal();
+      c.l.unlock();
     }
-    
-    
+    }
  }
  
  void keyPressed(){
     if(c.menu == 1){
-      if(key == BACKSPACE) c.menu = 2;
+      switch(key){
+        case (BACKSPACE):
+          c.menu = 2;
+          break;
+        
+        case ('w'):
+          try{
+            c.l.lock();
+            c.keyPressed = 'w';
+          }finally{
+            c.l.unlock();
+          }
+          break;
+        
+        case ('a'):
+          try{
+            c.l.lock();
+            c.keyPressed = 'a';
+          }finally{
+            c.l.unlock();
+          }
+          break;
+        
+        case ('d'):
+          try{
+            c.l.lock();
+            c.keyPressed = 'd';
+          }finally{
+            c.l.unlock();
+          }
+          break;
+        
+      }
+      
     }
+    
     else if (c.menu == 0 ) {
       mainMenu.keyPressed(key); 
     }
 }
 
+void keyReleased(){
+  
+  switch(key){
+  case ('w'):
+          try{
+            c.l.lock();
+            c.keyReleased = 'w';
+          }finally{
+            c.l.unlock();
+          }
+          break;
+        
+        case ('a'):
+          try{
+            c.l.lock();
+            c.keyReleased = 'a';
+          }finally{
+            c.l.unlock();
+          }
+          break;
+        
+        case ('d'):
+          try{
+            c.l.lock();
+            c.keyReleased = 'd';
+          }finally{
+            c.l.unlock();
+          }
+          break;
+        
+      }
+  
+}
+
 void mouseClicked(){
  if(c.menu == 0){
    mainMenu.mouseClicked(mouseX,mouseY);
+ }
+ else if(c.menu == 1){
  }
  else if(c.menu == 2){
    clientMenu.mouseClicked(mouseX,mouseY);

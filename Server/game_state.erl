@@ -6,7 +6,7 @@
 % Constantes
 
 max_velocity(Radius) ->
-	min_velocity() + 50/Radius.
+	min_velocity() + 500/Radius.
 
 min_velocity() ->
 	10.
@@ -33,7 +33,7 @@ max_side_acceleration() ->
 	20.
 
 pressed_propulsion() ->
-	5.
+	20.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -132,6 +132,8 @@ create_creatures(State,Number)->
 
 create_creature(State) ->
 	Info = #{},
+	Vel_Min = min_velocity(),
+	Vel_Max = max_velocity(min_Radius()),
 	Info1 = maps:put(type,rand:uniform(2)-1,Info),
 	Info2 = maps:put(pos,new_position(State,min_Radius()),Info1),
 	Info3 = maps:put(radius,min_Radius(),Info2),
@@ -174,8 +176,10 @@ create_creature(State) ->
 % Creatures
 calculate_creatures(State,TimeDelta) ->
 	{A,B,Creatures} = State,
+	Vel_Min = min_velocity(),
+	Vel_Max = max_velocity(min_Radius()),
 	NewCreatures = [element(1,environment_collision(State,Obj,TimeDelta)) || Obj <- Creatures],
-	NewNewCreatures = [maps:put(accel_ang,(Vel_Min+rand:uniform()*(Vel_Max-Vel_Min))/20,maps:put(velocity_ang,TimeDelta*maps:get(accel_ang,NewCreature) + maps:get(velocity_ang,NewCreature), maps:put(direction, fmod(TimeDelta*maps:get(velocity_ang,NewCreature) + maps:get(direction,NewCreature), 2*math:pi()) ,NewCreature))) || NewCreature <- NewCreatures],
+	NewNewCreatures = [maps:put(accel_ang,(Vel_Min+rand:uniform()*(Vel_Max-Vel_Min))*100,maps:put(velocity_ang,TimeDelta*maps:get(accel_ang,NewCreature) + maps:get(velocity_ang,NewCreature), maps:put(direction, fmod(TimeDelta*maps:get(velocity_ang,NewCreature) + maps:get(direction,NewCreature), 2*math:pi()) ,NewCreature))) || NewCreature <- NewCreatures],
 	{A,B,NewCreatures}.
 
 
@@ -194,25 +198,29 @@ calculate_acceleration(Player,TimeDelta) ->
 	Delta = maps:get(propulsion,Player),
 	Acc = (Delta*TimeDelta) + maps:get(fwd_acceleration,Player),
 	Acc1 = min(max(Acc, min_acceleration()),max_acceleration()),
+	%io:format("Acceleration: ~p~n",[Acc1]),
 	maps:put(fwd_acceleration,Acc1,Player).
 
 
 
 calculate_velocity(Player,TimeDelta) ->
 	Acc = maps:get(fwd_acceleration,Player),
-	Vel = (Acc*TimeDelta) + maps:get(fwd_acceleration,Player),
-	Vel1 = min(max(Acc, min_velocity()),max_velocity(maps:get(radius,Player))),
+	Vel = (Acc*TimeDelta) + maps:get(velocity,Player),
+	Vel1 = min(max(Vel, min_velocity()),max_velocity(maps:get(radius,Player))),
+	%io:format("Velocity: ~p~n",[Vel1]),
 	maps:put(velocity,Vel1,Player).
 
 calculate_angular_velocity(Player,TimeDelta) ->
 	Acc = maps:get(side_acceleration,Player),
+	%io:format("ACELERACAO ANGULAR: ~p~n",[Acc]),
 	Vel = (Acc*TimeDelta) + maps:get(angular_velocity,Player),
-	Vel1 = min(max(Acc, -1* max_ang_velocity()), max_ang_velocity()),
+	Vel1 = min(max(Vel, -1* max_ang_velocity()), max_ang_velocity()),
 	maps:put(angular_velocity,Vel1,Player).
 
 
 calculate_direction(Player,TimeDelta) ->
 	Vel = maps:get(angular_velocity,Player),
+	%io:format("VELOCIDADE ANGULAR: ~p~n",[Vel]),
 	Direction = maps:get(direction,Player),
 	NewDirection = fmod(Direction + Vel*TimeDelta,2*math:pi()),
 	maps:put(direction,NewDirection,Player).
@@ -232,9 +240,12 @@ calculate_players(State,TimeDelta) ->
 alternate_propulsion(Pid,State,KeyState) ->
 	{A,Players,C} = State,
 	Player = maps:get(Pid,Players),
-	Fact = (-1),
-	if KeyState -> Fact*(-1) end,
+	if 
+		KeyState -> Fact = 1;
+		true -> Fact = -10
+	end,
 	Delta = maps:get(propulsion,Player) + Fact*(pressed_propulsion()),
+	%io:format("DELTA: ~p~n Fact ~p~n",[Delta,Fact]),
 	NewPlayer = maps:put(propulsion,Delta,Player),
 	NewPlayers = maps:put(Pid,NewPlayer,Players),
 	{A,NewPlayers,C}.
@@ -246,9 +257,10 @@ calculate_propulsion(Player) ->
 	Acc = maps:get(fwd_acceleration,Player),
 	M = min_acceleration(),
 	if
-		Acc > M + (0.01)  -> NewProp = Prop + math:sqrt(Acc);
+		Acc > 0  -> NewProp = Prop;
 		true -> NewProp = 0
 	end,
+	%io:format("PROPULSION: ~p~n",[NewProp]),
 	maps:put(propulsion,NewProp,Player).
 
 
@@ -256,6 +268,7 @@ alternate_angular_propulsion(Pid,State,Factor) ->
 	{A,Players,C} = State,
 	Player = maps:get(Pid,Players),
 	Delta = maps:get(side_propulsion,Player) + Factor*(pressed_propulsion()),
+	%io:format("Delta: ~p~n",[Delta]),
 	NewPlayer = maps:put(side_propulsion,Delta,Player),
 	NewPlayers = maps:put(Pid,NewPlayer,Players),
 	{A,NewPlayers,C}.
@@ -270,7 +283,7 @@ calculate_angular_propulsion(Player,TimeDelta) ->
 		Acc < (0.01)  -> NewProp = Prop - Acc;
 		true -> NewProp = 0
 	end,
-	maps:put(propulsion,NewProp,Player).
+	maps:put(side_propulsion,NewProp,Player).
 
 
 calculate_player(State,Player,TimeDelta) -> 
@@ -280,8 +293,9 @@ calculate_player(State,Player,TimeDelta) ->
 	Player3 = calculate_angular_velocity(Player2,TimeDelta),
 	Player4 = calculate_angular_acceleration(Player3,TimeDelta),
 	Player5 = calculate_angular_propulsion(Player4,TimeDelta),
+	Player6 = calculate_direction(Player5,TimeDelta),
 	% calculate_energy
-	environment_collision(State,Player5,TimeDelta).
+	environment_collision(State,Player6,TimeDelta).
 
 
 
@@ -392,9 +406,9 @@ overlap_player_creature(Player,Creature) -> % true se comeu
 
 overlaps_player(PlayerAInfo,Players,Creatures,Deads) ->
 	{Pid,PlayerA} = PlayerAInfo,
-	K = is_map(Players),
+	%K = is_map(Players),
 	%io:format("IS MAP PLAYERS: ~p~n",[K]),
-	G = is_map(PlayerA),
+	%G = is_map(PlayerA),
 	%io:format("IS MAP: ~p~n",[G]),
 
 	B = lists:any(fun(K) -> K == Pid end, Deads),
@@ -416,13 +430,15 @@ overlaps_player(PlayerAInfo,Players,Creatures,Deads) ->
 	D = length(Eaten_by) > 0,
 	K = [lmao || Tp <- Creatures_Eaten, Tp == 1],
 	Rad = maps:get(radius,PlayerA),
+	Radius_Min = min_Radius(),
+	%Vel_Max = max_velocity(min_Radius()),
 
 	if
 		D -> [PidB | T] = Eaten_by,
 				   PlayerB = maps:get(PidB,Players),
 			{[{PidB,buff_player(PlayerB,[2])}| [{PidK,PlayerK} || {PidK,PlayerK,CondK} <- Overlaps_players, PidK /= PidB]],Creatures,[Pid]};
 		
-		(length(K) > 0) and (Rad < min_Radius() + (0.01))  -> {[{PidK,PlayerK} || {PidK,PlayerK,CondK} <- Overlaps_players],Creatures_not_Eaten,[Pid]}
+		(length(K) > 0) and (Rad < Radius_Min + (0.01))  -> {[{PidK,PlayerK} || {PidK,PlayerK,CondK} <- Overlaps_players],Creatures_not_Eaten,[Pid]};
 
 
 		true -> {changes(Elastic,All_buffs,Has_no_Over,PlayerAInfo) , Creatures_not_Eaten, [PidK || {PidK,PlayerK} <- Has_Eaten]}
@@ -462,14 +478,14 @@ apply_buffer(Player,Buff) ->
 		
 		(Buff == 1) -> maps:put(propulsion,Jk-jk_increment(),Player); %bad
 		
-		true -> P2 = maps:put(radius,min(Rad+increment(),max_Radius()),Player), P3 = maps:put(propulsion,Jk-jk_increment(),P2), maps:put(propulsion,Pts+1,P3) %player
+		true -> P2 = maps:put(radius,min(Rad+increment(),max_Radius()),Player), P3 = maps:put(propulsion,Jk-jk_increment(),P2), maps:put(points,Pts+1,P3) %player
 	end.
 
 increment() ->
 	1.
 
 jk_increment() ->
-	5.
+	1000.
 
 
 distance(Xa,Ya,Xb,Yb) ->

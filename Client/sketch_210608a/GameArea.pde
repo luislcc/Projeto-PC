@@ -56,7 +56,7 @@ class GameArea{
       }
     }
     catch(Exception e){}
-    this.printState();
+   // this.printState();
   }
 
   public Creature receiveCreature(BufferedReader b){
