@@ -44,7 +44,10 @@ void draw(){
  }
  
  void keyPressed(){
-    if (c.menu == 0 ) {
+    if(c.menu == 1){
+      if(key == BACKSPACE) c.menu = 2;
+    }
+    else if (c.menu == 0 ) {
       mainMenu.keyPressed(key); 
     }
 }

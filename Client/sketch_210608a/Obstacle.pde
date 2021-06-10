@@ -24,6 +24,6 @@ class Obstacle{
   public void draw(){
     color c = color(0,0,0);
     fill(c);
-    circle(this.position[0],this.position[1],radius);
+    circle(this.position[0],this.position[1],radius*2);
   } 
 }
