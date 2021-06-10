@@ -1,5 +1,5 @@
 -module(game_state).
--export([new_state/0, calculate_state/2,create_player/4,alternate_propulsion/3,alternate_angular_propulsion/3, count_players/1,get_points/1]).
+-export([new_state/0, calculate_state/3,create_player/4,alternate_propulsion/3,alternate_angular_propulsion/3, count_players/1,get_points/1]).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -44,11 +44,18 @@ get_points(State) ->
 	[{maps:get(username,Player), maps:get(points,Player)} || {Pid,Player} <- ListPlayers].
 
 
-calculate_state(State,TimeDelta) ->	
-	NumberOfCreatures = rand:uniform(max_creatures()+1 - length(element(3,State))) - 1,
-	NewState = create_creatures(State,NumberOfCreatures),
-	%io:format("STATE: ~p~n",[NewState]),
-	check_Overlaps(calculate_players(calculate_creatures(NewState,TimeDelta),TimeDelta)). %returns new state, [Deads]
+calculate_state(State,TimeDelta,TimeStampCreatures) ->	
+	{State1,Deads} = check_Overlaps(calculate_players(calculate_creatures(State,TimeDelta),TimeDelta)), %returns new state, [Deads]
+	Prob = rand:uniform()*100,
+	MaxC = max_creatures(),
+	TimeDeltaCreatures = timer:now_diff(erlang:timestamp(),TimeStampCreatures),
+	if
+		(Prob < 1) and (TimeDeltaCreatures > 1000000) and (length(element(3,State)) < MaxC)-> NumberOfCreatures = 1,
+					 NewState = create_creatures(State1,NumberOfCreatures),
+					 {NewState,Deads,erlang:timestamp()};
+
+		true -> {State1,Deads,TimeStampCreatures}
+	end. 
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -5,6 +5,7 @@ class GameArea{
   private int height;
   private int width;
   private HashMap<String,Player> players;
+  private HashMap<String,Integer> leaderboard;
   private Obstacle[] obstacles;
   private Creature[] creatures;
 
@@ -12,10 +13,11 @@ class GameArea{
     try{
     this.height = height;
     this.width = width;
+    this.leaderboard = new HashMap<String,Integer>();
     this.players = new HashMap<String,Player>();
     this.obstacles = new Obstacle[0];
     this.creatures = new Creature[0];
-    Random rand = new Random();}
+    }
     catch(Exception e){}
   }
 
@@ -41,7 +43,16 @@ class GameArea{
         this.creatures = new Creature[numberOfCreatures];
         for (int i = 0; i < numberOfCreatures ;i++) {
           this.creatures[i] = this.receiveCreature(b);
-        }
+        }  
+        // String st = b.readLine();
+         //System.out.println("HELLO " + st);
+         int numberOfEntries = Integer.parseInt(b.readLine());
+        // System.out.println("NUMBER OF ENTRIES: " + numberOfEntries);
+         for(int i = 0; i < numberOfEntries; i++){
+             String player = b.readLine();
+             Integer points = Integer.parseInt(b.readLine());
+            this.leaderboard.put(player,points);
+         }
       }
     }
     catch(Exception e){}
@@ -95,6 +106,9 @@ class GameArea{
       System.out.println("PID: " + e.getKey());
     }
     for(Creature c : this.creatures) System.out.println(c.toString());
+    for(Map.Entry<String,Integer> e : this.leaderboard.entrySet()){
+     System.out.println("JOGADOR: " + e.getKey() + " " + "PONTOS: " + e.getValue());  
+    }
   }
 
   public void draw(){

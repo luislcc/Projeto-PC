@@ -14,6 +14,12 @@ server(Port)->
 
 %State = {{width,height,obstacle_list},{Pid => {pos =>},List}
 
+leaderboard_to_list(Leaderboard) ->
+	ListLeaderboard = maps:to_list(Leaderboard),
+	K = [[Username,"\n",integer_to_list(Points),"\n"] || {Username,Points} <- ListLeaderboard],
+	io:format("LEADERBOARD CONSTRUIDA: ~p~n",[K]),
+	K.
+
 state_to_list(State) ->
 	{Map,Players,Creatures} = State,
 	{Width,Height,Obstacle_List} = Map,
@@ -59,7 +65,7 @@ user(Sock,Username)->
 					_ -> user(Sock,Username)
 				end;
 
-		{update,State,game_manager} -> gen_tcp:send(Sock,list_to_binary(["update\n",state_to_list(State)])),user(Sock,Username);
+		{update,State,Leaderboard,game_manager} -> gen_tcp:send(Sock,list_to_binary(["update\n",state_to_list(State),integer_to_list(maps:size(Leaderboard)),"\n",leaderboard_to_list(Leaderboard)])),user(Sock,Username);
 
 		{joined_game,game} -> gen_tcp:send(Sock,list_to_binary("game started\n")),user(Sock,Username);
 
