@@ -120,7 +120,9 @@ create_creature(State, Vel_Max, Vel_Min) ->
 	Info3 = maps:put(radius,min_Radius(),Info2),
 	Info4 = maps:put(direction,rand:uniform()*math:pi()*2,Info3),
 	Info5 = maps:put(velocity,Vel_Min+rand:uniform()*(Vel_Max-Vel_Min),Info4),
-	[Info5 | element(3,State)].
+	Info6 = maps:put(velocity_ang,Vel_Min+rand:uniform()*(Vel_Max-Vel_Min),Info5),
+	Info7 = maps:put(accel_ang,(Vel_Min+rand:uniform()*(Vel_Max-Vel_Min))/20,Info6),
+	[Info7 | element(3,State)].
 
 
 
@@ -153,7 +155,8 @@ create_creature(State, Vel_Max, Vel_Min) ->
 % Creatures
 calculate_creatures(State,TimeDelta) ->
 	{A,B,Creatures} = State,
-	NewCreatures = [ element(1,environment_collision(State,Obj,TimeDelta)) || Obj <- Creatures],
+	NewCreatures = [element(1,environment_collision(State,Obj,TimeDelta)) || Obj <- Creatures],
+	NewNewCreatures = [maps:put(accel_ang,(Vel_Min+rand:uniform()*(Vel_Max-Vel_Min))/20,maps:put(velocity_ang,TimeDelta*maps:get(accel_ang,NewCreature) + maps:get(velocity_ang,NewCreature), maps:put(direction, fmod(TimeDelta*maps:get(velocity_ang,NewCreature) + maps:get(direction,NewCreature), 2*math:pi()) ,NewCreature))) || NewCreature <- NewCreatures],
 	{A,B,NewCreatures}.
 
 
@@ -387,15 +390,21 @@ overlaps_player(PlayerAInfo,Players,Creatures,Deads) ->
 	Creatures_Eaten = [ maps:get(type,Creature) || Creature <- Creatures, overlap_player_creature(PlayerA,Creature)],
 	Creatures_not_Eaten = [ Creature || Creature <- Creatures, not overlap_player_creature(PlayerA,Creature)],
 	All_buffs = Creatures_Eaten ++ Has_Eaten,
-	
+
+
+
 	D = length(Eaten_by) > 0,
-	C = lists:any(fun(El) -> true end, Eaten_by),
-	%Nao tenho a certeza se PidB = Pid
+	K = [lmao || Tp <- Creatures_Eaten, Tp == 1],
+	Rad = maps:get(radius,PlayerA),
+
 	if
-		D and C -> [PidB | T] = Eaten_by,
+		D -> [PidB | T] = Eaten_by,
 				   PlayerB = maps:get(PidB,Players),
 			{[{PidB,buff_player(PlayerB,[2])}| [{PidK,PlayerK} || {PidK,PlayerK,CondK} <- Overlaps_players, PidK /= PidB]],Creatures,[Pid]};
 		
+		(length(K) > 0) and (Rad < min_Radius() + (0.01))  -> {[{PidK,PlayerK} || {PidK,PlayerK,CondK} <- Overlaps_players],Creatures_not_Eaten,[Pid]}
+
+
 		true -> {changes(Elastic,All_buffs,Has_no_Over,PlayerAInfo) , Creatures_not_Eaten, [PidK || {PidK,PlayerK} <- Has_Eaten]}
 	end.
 
@@ -405,7 +414,7 @@ changes(Elastic,All_buffs,Has_no_Over,PlayerAInfo) ->
 	Res = [{Pid, invert_player_direction(Player)} ||  {Pid,Player} <- Elastic],
 	Res2 = Res ++ Has_no_Over,
 	{PidA,PlayerA} = PlayerAInfo,
-	Res3 = [{PidA,buff_player(PlayerA,All_buffs)}| Res2].
+	[{PidA,buff_player(PlayerA,All_buffs)}| Res2].
 
 
 
