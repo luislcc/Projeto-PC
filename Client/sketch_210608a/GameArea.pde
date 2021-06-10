@@ -20,6 +20,7 @@ class GameArea{
   }
 
   public void receiveState(BufferedReader b){
+    this.players = new HashMap<String,Player>();
     try{
       String s = b.readLine();
       //System.out.println(s);
@@ -44,6 +45,7 @@ class GameArea{
       }
     }
     catch(Exception e){}
+    this.printState();
   }
 
   public Creature receiveCreature(BufferedReader b){

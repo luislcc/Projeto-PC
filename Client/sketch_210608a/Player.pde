@@ -1,3 +1,5 @@
+import java.lang.Math;
+
 class Player{
   private Float[] position;
   private Float radius;
@@ -29,6 +31,8 @@ class Player{
   public void draw(){
     color c = color(0,0,255);
     fill(c);
-    circle(this.position[0],this.position[1],radius);
+    circle(this.position[0],this.position[1],radius*2);
+    fill(255);
+    line(this.position[0],this.position[1],this.position[0] + cos(this.direction)*this.radius, this.position[1] + sin(this.direction)*this.radius);
   }
 }

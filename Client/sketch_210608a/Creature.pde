@@ -34,6 +34,6 @@ class Creature{
   public void draw(){
     color c = color(this.poisonous*255,(1-this.poisonous)*255,0);
     fill(c);
-    circle(this.position[0],this.position[1],radius);
+    circle(this.position[0],this.position[1],radius*2);
   }
 }

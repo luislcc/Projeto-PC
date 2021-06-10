@@ -18,7 +18,7 @@ min_acceleration() ->
 	(-5).
 
 max_Radius() ->
-	30.
+	300.
 
 min_Radius() ->
 	5.
