@@ -1,5 +1,5 @@
 -module(game_state).
--export([new_state/0, calculate_state/2,create_player/3,alternate_propulsion/3,alternate_angular_propulsion/3, count_players/1]).
+-export([new_state/0, calculate_state/2,create_player/3,alternate_propulsion/3,alternate_angular_propulsion/3, count_players/1,get_points/1]).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -35,9 +35,15 @@ pressed_propulsion() ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
+get_points(State) ->
+	{_,Players,_} = State,
+	ListPlayers = maps:to_list(Players),
+	[{maps:get(username,Player), maps:get(points,Player)} || {Pid,Player} <- ListPlayers].
+
+
 calculate_state(State,TimeDelta) ->
 	%io:format("STATE: ~p~n",[calculate_players(calculate_creatures(State,TimeDelta),TimeDelta)]),
-	check_Overlaps(calculate_players(calculate_creatures(State,TimeDelta),TimeDelta)). %returns new state and [Deads]
+	check_Overlaps(calculate_players(calculate_creatures(State,TimeDelta),TimeDelta)). %returns new state, [Deads]
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -50,7 +56,7 @@ new_map(Width, Height,RadMax, RadMin,Obst)->
 	{Width, Height, Obstacles}.
 
 
-create_player(State,Pid,Radius) ->
+create_player(State,Pid,Radius,Username) ->
 	%if Rad < 1 -> Radius = min_Radius()*2 end,
 	Info = #{},
 	Info1 = maps:put(pos,new_position(State,Radius),Info),
@@ -66,6 +72,7 @@ create_player(State,Pid,Radius) ->
 	Info10 = maps:put(points,0,Info0),
 	Info11 = maps:put(is_boosting,false,Info10),
 	Info12 = maps:put(is_angular_boosting,false,Info11),
+	Info13 = maps:put(username,Username,Info12),
 	{element(1,State),maps:put(Pid,Info12,element(2,State)),element(3,State)}.
 
 

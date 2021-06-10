@@ -7,35 +7,49 @@ initialize()->
 	loop([],queue:new()).
 
 
-loop(Players,Queue)->
+loop(LeaderBoard,Players,Queue)->
 	
 	QueueState = queue:is_empty(Queue),
 	receive 
-		{join,Pid} when (not QueueState)-> Pid!{enqueued,game_manager}, loop(Players,queue:snoc(Queue,Pid));
+		{join,Pid,Username} when (not QueueState)-> Pid!{enqueued,game_manager}, loop(LeaderBoard,Players,queue:snoc(Queue,{Pid,Username}));
 
-		{join,Pid} when length(Players) < 3 ->  join_game(Pid), loop([Pid | Players],Queue);
+		{join,Pid,Username} when length(Players) < 3 ->  join_game({Pid,Username}), loop(LeaderBoard,[{Pid,Username} | Players],Queue);
 		
-		{join,Pid} when length(Players) >= 3 ->  Pid!{enqueued,game_manager}, loop(Players,queue:snoc(Queue,Pid));
+		{join,Pid,Username} when length(Players) >= 3 ->  Pid!{enqueued,game_manager}, loop(LeaderBoard,Players,queue:snoc(Queue,{Pid,Username}));
 
-		{left,Pid,game} when (not QueueState) -> Pid!{left_game,game_manager}, join_game(queue:get(Queue)), loop([queue:get(Queue) | (Players -- [Pid])], queue:drop(Queue));
+		{left,Pid,game} when (not QueueState) -> Pid!{left_game,game_manager}, join_game(queue:get(Queue)), loop(LeaderBoard,[queue:get(Queue) | (Players -- [{Pid,Username}])], queue:drop(Queue));
 		
-		{left,Pid,game} -> Pid!{left_game,game_manager}, loop((Players -- [Pid]), Queue);
+		{left,Pid,game} -> Pid!{left_game,game_manager}, loop(LeaderBoard,(Players -- [{Pid,Username}]), Queue);
 
-		{died,Pid,game} when (not QueueState) -> Pid!{dead,game_manager}, join_game(queue:get(Queue)), loop([queue:get(Queue) | (Players -- [Pid])], queue:drop(Queue));
+		{died,Pid,game} when (not QueueState) -> Pid!{dead,game_manager}, join_game(queue:get(Queue)), loop(LeaderBoard,[queue:get(Queue) | (Players -- [{Pid,Username}])], queue:drop(Queue));
 
-		{died,Pid,game} -> Pid!{dead,game_manager}, loop((Players -- [Pid]), Queue),loop(Players,Queue);
+		{died,Pid,game} -> Pid!{dead,game_manager}, loop(LeaderBoard,(Players -- [{Pid,Username}]), Queue),loop(LeaderBoard,Players,Queue);
 
-		{update,Pid} -> game ! {update,Pid,game_manager}, loop(Players,Queue);
+		{update,Pid} -> game ! {update,Pid,game_manager}, loop(LeaderBoard,Players,Queue);
 
-		{update_state,State,Pid,game} -> Pid ! {update,State,game_manager}, loop(Players,Queue);
+		{update_state,State,Pid,game} -> Pid ! {update,State,game_manager}, loop(LeaderBoard,Players,Queue);
 		
-		{leave,Pid} -> Pid!{left_queue,game_manager}, loop(Players,queue:delete(Pid,Queue))
+		{points,GamePoints,game} -> loop(update_points(LeaderBoard,GamePoints),Players,Queue);
+
+		{leave,Pid} -> Pid!{left_queue,game_manager}, loop(LeaderBoard,Players,queue:delete(Pid,Queue))
+	end.
+
+
+update_points(LeaderBoard,Current)->
+	if
+		length(Current) < 1 -> LeaderBoard.
+		true -> [{Username,Points} | T] = Current, CurrentUserPoints = maps:get(Username,LeaderBoard), 
+				if
+					Points > CurrentUserPoints -> update_points(maps:put(Username,CurrentUserPoints,LeaderBoard),T),
+					true -> update_points(LeaderBoard,T)
+				end 
 	end.
 															
 
 
-join_game(Pid) ->
-	game!{join,Pid,game_manager},
+join_game(Joining) ->
+	{Pid,Username} = Joining
+	game!{join,Pid,Username,game_manager},
 	Pid!{joined_game,game}.
 
 
@@ -67,12 +81,13 @@ game_instance(State, Timestamp) ->
 		{d_release,Pid} -> game_instance(game_state:alternate_angular_propulsion(Pid,NewState,(-1)),TimeNow);
 		{leave, Pid} -> {Calculated_State,Left} = game_state:remove_player(NewState,Pid), game_manager!{left,Left,game}, game_instance(Calculated_State,TimeNow);
 
-		{join,Pid,game_manager} -> game_instance(game_state:create_player(NewState,Pid,5),erlang:timestamp())
+		{join,Pid,Username,game_manager} -> game_instance(game_state:create_player(NewState,Pid,5,Username),erlang:timestamp())
 
 	after T -> true
 	end,
 
 	[?MODULE ! {died,Dead,game} || Dead <- Deads],
+	?MODULE ! {points,game_state:get_points(State),game},
 	%?MODULE ! {update_state,NewState,game},
 	%game_state:print_stt(State),
 	game_instance(NewState,TimeNow).
