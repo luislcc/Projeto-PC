@@ -33,7 +33,7 @@ player_to_list(Players)->
 	[[pid_to_list(P),"\n",float_to_list(element(1,maps:get(pos,M))),"\n",float_to_list(element(2,maps:get(pos,M))),"\n",integer_to_list(maps:get(radius,M)),"\n",float_to_list( maps:get(direction,M)),"\n"] || {P,M} <- L ].
 
 creature_to_list(Creatures)->
-	[[integer_to_list(maps:get(type,M)),"\n",float_to_list(element(1,maps:get(pos,M))),"\n",float_to_list(element(2,maps:get(pos,M))),"\n",float_to_list(maps:get(radius,M)),"\n",float_to_list(maps:get(direction,M)),"\n"] || M <- Creatures].
+	[[integer_to_list(maps:get(type,M)),"\n",float_to_list(element(1,maps:get(pos,M))),"\n",float_to_list(element(2,maps:get(pos,M))),"\n",integer_to_list(maps:get(radius,M)),"\n",float_to_list(maps:get(direction,M)),"\n"] || M <- Creatures].
 
 
 user(Sock,Username)->
@@ -45,7 +45,7 @@ user(Sock,Username)->
 						 	user(Sock,Username);
 
 					["join"] ->
-							game_manager ! {join,self()},
+							game_manager ! {join,self(),Username},
 							user(Sock,Username);
 
 					["update"] ->

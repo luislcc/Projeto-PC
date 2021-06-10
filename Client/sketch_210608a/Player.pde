@@ -32,7 +32,7 @@ class Player{
     color c = color(0,0,255);
     fill(c);
     circle(this.position[0],this.position[1],radius*2);
-    fill(255);
+    stroke(color(255,255,255));
     line(this.position[0],this.position[1],this.position[0] + cos(this.direction)*this.radius, this.position[1] + sin(this.direction)*this.radius);
   }
 }
