@@ -139,10 +139,8 @@ create_creature(State) ->
 	Info5 = maps:put(velocity,Vel_Min+rand:uniform()*(Vel_Max-Vel_Min),Info4),
 	Info6 = maps:put(velocity_ang,Vel_Min+rand:uniform()*(Vel_Max-Vel_Min),Info5),
 	Info7 = maps:put(accel_ang,(Vel_Min+rand:uniform()*(Vel_Max-Vel_Min))/20,Info6),
-	[Info7 | element(3,State)].
-	Info5 = maps:put(velocity,min_velocity()+rand:uniform()*(max_velocity(min_Radius())-min_velocity()),Info4),
 	{Map,Players,Creatures} = State,
-	{Map,Players,[Info5 | Creatures]}. 
+	{Map,Players,[Info7 | Creatures]}. 
 
 
 
