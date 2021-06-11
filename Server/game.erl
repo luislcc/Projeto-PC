@@ -29,7 +29,7 @@ game_instance(Players,LeaderBoard,State,Timestamp) ->
 		{d_release,Pid} -> NewState = gameEngine:applyUserInput(Pid,State,d,u), NewPlayers = Players;
 		
 		{createCreature,spawner} -> spawn(fun()-> mob_spawner(self())),NewState = gameEngine:probableCreature(State),NewPlayers = Players; 
-		{toJoin,Pid,Username} ->NewState = gameEngine:addPlayer(Pid,Username,State), NewPlayers = Players ++ [Pid];
+		{toJoin,Pid,Username,queue_manager} ->NewState = gameEngine:addPlayer(Pid,Username,State), NewPlayers = Players ++ [Pid];
 		{leave,Pid} ->Pid!{left,game}, NewState = gameEngine:removePlayer(Pid,State), queue_manager!{left,game}, NewPlayers = Players --[Pid];
 		_ -> ok
 		after 0 -> ok
@@ -41,7 +41,7 @@ game_instance(Players,LeaderBoard,State,Timestamp) ->
 
 	[{PidK!{dead,game},queue_manager!{left,game}} || PidK <- Deads],
 	NextPlayers = (NewPlayers -- Deads),
-	[PidL!{update,NextState,game} || PidL <- Players],
+	[PidL!{update,NextState,Leaderboard,game} || PidL <- Players],
 	
 	game_instance(NewPlayers, NewLeaderBoard ,NextState , erlang:timestamp()).
 

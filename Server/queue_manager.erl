@@ -3,7 +3,7 @@
 
 
 initialize()->
-	%(spawn?)
+	spawn(fun()-> game:start() end ).
 	loop(#{},0).
 
 
@@ -12,19 +12,19 @@ loop(Queue,PlayerNum) ->
 	receive
 		{join,Pid,Username} when (PlayerNum > 2) -> loop(enqueue(Pid,Username,Queue),PlayerNum);
 		{join,Pid,Username} -> joinGame(Pid,Username), loop(Queue,PlayerNum+1);		
-		{leave,Pid,_} -> Pid!{leftQueue,game_manager},loop(removeQueue(Pid,Queue),PlayerNum);
+		{leave,Pid,_} -> Pid!{leftQueue,queue_manager},loop(removeQueue(Pid,Queue),PlayerNum);
 		{left,game} -> {Dequeued,NewQueue} = dequeue(Queue), loop(NewQueue,PlayerNum-1+Dequeued)
 	end.
 
 
 joinGame(Pid,Username) ->
-	game!{toJoin,Pid,Username,game_manager},
+	game!{toJoin,Pid,Username,queue_manager},
 	Pid!{joined,game}.
 
 
 enqueue(Pid,Username,Queue)->
 	Position = length(maps:to_list(Queue)),
-	Pid!{enqueued,Position,game_manager},
+	Pid!{enqueued,Position,queue_manager},
 	maps:put(Pid,{Position,Username}).
 
 
