@@ -111,7 +111,6 @@ new_position(State, Radius) ->
 
 
 
-
 new_positionAux(State,Positions,Radius) ->
 	{MapW,MapH,_} = element(1,State),
 	New_x = min(max(rand:uniform()*MapW, Radius),MapW-Radius),
