@@ -1,0 +1,48 @@
+import java.util.*;
+import java.net.*;
+import java.io.*;
+import java.util.concurrent.locks.ReentrantLock;
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.locks.*;
+
+class Client{
+
+	private Socket s;
+	private BufferedReader b;
+
+	public Menu ativo;
+	public String username;
+	public String password;
+	public String cmd;
+
+	Client(String ipAdress,int portNumber){
+    	this.s = new Socket(ipAdress,portNumber);
+    	this.b = new BufferedReader( new InputStreamReader(this.s.getInputStream())); 
+	}
+
+	public void updateOnSocket(){
+		String message = this.cmd;
+		if (this.username.length()>0) {
+			message += " " + this.username + " " + this.password;
+		}
+		
+		message += "\n";
+
+    	try{
+    		System.out.println(message);
+    		DataOutputStream dout = new DataOutputStream(this.s.getOutputStream());
+    		dout.writeBytes(message);
+    		dout.flush();
+    	}
+    	catch(Exception e){}
+    	
+    	String receive = "";
+    	try{
+
+    		receive = this.b.readLine();
+    		System.out.println(receive);
+    	}
+    	catch(Exception e){System.out.println(e.toString());}
+    	//return s;
+	}
+}

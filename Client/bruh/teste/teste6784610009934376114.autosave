@@ -1,0 +1,27 @@
+class Test implements Clickable{
+	public float posx(){
+		return 10;
+	}
+
+	public float posy(){
+		return 10;
+	}
+	public float extent(){
+		return 10;
+	}
+	public String displayText(){
+		return "Bruh";
+	} 
+	public void clicked(int mouseX, int mouseY, Client c){
+		if ((mouseX > this.posx() && mouseX < this.posx()+this.extent()) && (mouseY > this.posy() && mouseY < this.posy()+this.extent())){
+			c.bruh();
+		}
+	} 
+}
+
+
+Menu pros = new Menu("LetsGo",new Client(), new ArrayList<Clickable>(Arrays.asList()));
+
+void draw(){
+	pros.draw();
+}

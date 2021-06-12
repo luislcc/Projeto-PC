@@ -1,0 +1,136 @@
+import java.util.*;
+import java.net.*;
+import java.io.*;
+import java.util.concurrent.locks.ReentrantLock;
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.locks.*;
+
+class Client{
+
+	private Socket s;
+	private BufferedReader b;
+	public Menu ativo;
+	public String username;
+	public String password;
+	public String cmd;
+	public boolean logged = false;
+
+	Client(String ipAdress,int portNumber){
+		try{
+    	this.s = new Socket(ipAdress,portNumber);
+    	this.b = new BufferedReader( new InputStreamReader(this.s.getInputStream()));
+    	}
+    	catch(Exception e){}
+	}
+
+
+	public synchronized void setCMD(String cmd){
+		this.cmd = cmd;
+		notifyAll();
+	}
+
+	
+	public void updateFromSocket(){
+		String receive = "";
+    	try{
+    		receive = this.b.readLine();
+    		System.out.println(receive);
+
+    		synchronized(this){
+    			switch(receive){
+    				case "valid login":
+    					this.logged = true;
+    					this.ativo = play;
+    					this.ativo.messages = "\n" + receive;
+    				break;
+	
+    				case "logged out":
+    					this.logged = false;
+    					this.ativo = inicial;
+    					this.ativo.messages = "\n" + receive;
+    				break;
+	
+    				default:
+    					this.ativo = inicial;
+    					if (this.logged) {
+    						this.ativo = play;
+    					}
+    					this.ativo.messages = "\n" + receive;
+    					break;
+    			}
+    		}
+    	}
+    	catch(Exception e){System.out.println(e.toString());}
+	}		
+
+
+	
+	public synchronized void updateOnSocket(){
+		while(cmd.length() == 0){
+			wait();
+		}
+
+		String message = this.cmd;
+    	switch(cmd){
+    		
+    		case "online":
+    		break;
+
+    		case "join":
+    		break;
+
+    		case "logout":
+    		break;
+
+    		case "leave":
+    		break;
+
+    		default:
+				message += " " + this.username + " " + this.password;
+    		break;
+    	}
+		
+		message += "\n";
+
+    	try{
+    		System.out.println(message);
+    		DataOutputStream dout = new DataOutputStream(this.s.getOutputStream());
+    		dout.writeBytes(message);
+    		dout.flush();
+    	}
+    	catch(Exception e){}	
+    }
+}
+
+
+
+
+
+class SocketReader extends Thread{
+	Client c;
+
+	SocketReader(Client c){
+		this.c = c;
+	}
+
+	public void run(){
+		while(true){
+			c.updateFromSocket();
+		}
+	}
+}
+
+
+class SocketWriter extends Thread{
+	Client c;
+
+	SocketReader(Client c){
+		this.c = c;
+	}
+
+	public void run(){
+		while(true){
+			c.updateOnSocket();
+		}
+	}
+}

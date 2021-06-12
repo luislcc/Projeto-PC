@@ -3,17 +3,18 @@
 
 
 initialize()->
-	spawn(fun()-> game:start() end ).
+	spawn(fun()-> game:start() end ),
 	loop(#{},0).
 
 
 
 loop(Queue,PlayerNum) ->
 	receive
-		{join,Pid,Username} when (PlayerNum > 2) -> loop(enqueue(Pid,Username,Queue),PlayerNum);
+		{join,Pid,Username} when (PlayerNum > -1) -> loop(enqueue(Pid,Username,Queue),PlayerNum);
 		{join,Pid,Username} -> joinGame(Pid,Username), loop(Queue,PlayerNum+1);		
 		{leave,Pid,_} -> Pid!{leftQueue,queue_manager},loop(removeQueue(Pid,Queue),PlayerNum);
-		{left,game} -> {Dequeued,NewQueue} = dequeue(Queue), loop(NewQueue,PlayerNum-1+Dequeued)
+		{left,game} -> {Dequeued,NewQueue} = dequeue(Queue), loop(NewQueue,PlayerNum-1+Dequeued);
+		{stop} -> ok
 	end.
 
 
@@ -25,14 +26,14 @@ joinGame(Pid,Username) ->
 enqueue(Pid,Username,Queue)->
 	Position = length(maps:to_list(Queue)),
 	Pid!{enqueued,Position,queue_manager},
-	maps:put(Pid,{Position,Username}).
+	maps:put(Pid,{Username,Position},Queue).
 
 
 removeQueue(Pid,Queue)->
-	Position = maps:get(Pid,Queue),
+	{_,Position} = maps:get(Pid,Queue),
 	NewQueue = maps:remove(Pid,Queue),
-	NewNewQueue = removeQueueAux(Position,maps:to_list(NewQueue)),
-	[ PidK!{enqueued,PositionK} || {PidK,{PositionK,_}} <- maps:to_list(NewNewQueue)],
+	NewNewQueue = maps:from_list(removeQueueAux(Position,maps:to_list(NewQueue))),
+	[ PidK!{enqueued,PositionK,queue_manager} || {PidK,{_,PositionK}} <- maps:to_list(NewNewQueue)],
 	NewNewQueue.
 
 removeQueueAux(Position,QueueList)->

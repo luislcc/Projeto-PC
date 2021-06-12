@@ -1,4 +1,4 @@
--module(game_instance).
+-module(game).
 -export([start/0]).
 
 
@@ -8,7 +8,7 @@ timeToCreatures() ->
 
 game_starter(LeaderBoard)->
 	receive
-		{toJoin,Pid} -> State = gameEngine:addPlayer(Pid,gameEngine:newState()),spawn(fun()-> mob_spawner(self())),game_instance([Pid],LeaderBoard,State,erlang:timestamp());
+		{toJoin,Pid} -> State = gameEngine:addPlayer(Pid,gameEngine:newState()),spawn(fun()-> mob_spawner(self()) end),game_instance([Pid],LeaderBoard,State,erlang:timestamp());
 		_ -> game_starter(LeaderBoard)
 	end.
 
@@ -28,22 +28,24 @@ game_instance(Players,LeaderBoard,State,Timestamp) ->
 		{a_release,Pid} -> NewState = gameEngine:applyUserInput(Pid,State,a,u), NewPlayers = Players;
 		{d_release,Pid} -> NewState = gameEngine:applyUserInput(Pid,State,d,u), NewPlayers = Players;
 		
-		{createCreature,spawner} -> spawn(fun()-> mob_spawner(self())),NewState = gameEngine:probableCreature(State),NewPlayers = Players; 
+		{createCreature,spawner} -> spawn(fun()-> mob_spawner(self()) end),NewState = gameEngine:probableCreature(State),NewPlayers = Players; 
 		{toJoin,Pid,Username,queue_manager} ->NewState = gameEngine:addPlayer(Pid,Username,State), NewPlayers = Players ++ [Pid];
 		{leave,Pid} ->Pid!{left,game}, NewState = gameEngine:removePlayer(Pid,State), queue_manager!{left,game}, NewPlayers = Players --[Pid];
-		_ -> ok
-		after 0 -> ok
+		_ -> NewState = State, NewPlayers = Players
+		after 0 -> NewState = State, NewPlayers = Players
 	end,
 	
 	{NextState,Deads} = gameEngine:calculateState(NewState,TimeDelta),
-	CurrentPoints = gameEngine:getPoints(NextState)
-	NewLeaderBoard = updateLeaderBoard(LeaderBoard,CurrentPoints)
+	CurrentPoints = gameEngine:getPoints(NextState),
+	NewLeaderBoard = updateLeaderBoard(LeaderBoard,CurrentPoints),
 
-	[{PidK!{dead,game},queue_manager!{left,game}} || PidK <- Deads],
-	NextPlayers = (NewPlayers -- Deads),
-	[PidL!{update,NextState,Leaderboard,game} || PidL <- Players],
+	[PidK!{dead,game}|| PidK <- Deads],
+	[queue_manager!{left,game}|| _ <- Deads],
 	
-	game_instance(NewPlayers, NewLeaderBoard ,NextState , erlang:timestamp()).
+	NextPlayers = (NewPlayers -- Deads),
+	[PidL!{update,NextState,LeaderBoard,game} || PidL <- NextPlayers],
+	
+	game_instance(NextPlayers, NewLeaderBoard ,NextState , erlang:timestamp()).
 
 
 
@@ -58,8 +60,8 @@ updateLeaderBoard(LeaderBoard,Current)->
 		length(Current) < 1 -> LeaderBoard;
 		true -> [{Username,Points} | T] = Current, CurrentUserPoints = maps:get(Username,LeaderBoard), 
 				if
-					Points > CurrentUserPoints -> update_points(maps:put(Username,CurrentUserPoints,LeaderBoard),T);
-					true -> update_points(LeaderBoard,T)
+					Points > CurrentUserPoints -> updateLeaderBoard(maps:put(Username,CurrentUserPoints,LeaderBoard),T);
+					true -> updateLeaderBoard(LeaderBoard,T)
 				end 
 	end.
 
