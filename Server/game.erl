@@ -14,6 +14,7 @@ game_starter(LeaderBoard)->
 
 
 game_instance(Players,LeaderBoard,State,Timestamp) ->
+	timer:sleep(1), %% Sleep da Sorte %%
 	TimeDelta = timer:now_diff(erlang:timestamp(),Timestamp)/math:pow(10,6),
 	if
 		length(Players) < 1 -> game_starter(LeaderBoard);

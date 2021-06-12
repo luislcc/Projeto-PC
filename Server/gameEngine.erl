@@ -234,8 +234,8 @@ applyUserInputPlayer(Player,Key,KeyState) ->
 		a when (KeyState == d) and (Eny > 0.01) and (not BoostL) -> maps:put(is_angular_boostingL,true,maps:put(l_acceleration, maps:get(l_acceleration,Player) + accel_per_key(), Player));
 		a when (KeyState == u) and (BoostL) -> maps:put(is_angular_boostingL,false,maps:put(l_acceleration, maps:get(l_acceleration,Player) - accel_per_key(), Player));
 
-		a when (KeyState == d) and (Eny > 0.01) and (not BoostR) -> maps:put(is_angular_boostingR,true,maps:put(r_acceleration, maps:get(r_acceleration,Player) + accel_per_key(), Player));
-		a when (KeyState == u) and (BoostR) -> maps:put(is_angular_boostingR,false,maps:put(r_acceleration, maps:get(r_acceleration,Player) - accel_per_key(), Player))
+		d when (KeyState == d) and (Eny > 0.01) and (not BoostR) -> maps:put(is_angular_boostingR,true,maps:put(r_acceleration, maps:get(r_acceleration,Player) + accel_per_key(), Player));
+		d when (KeyState == u) and (BoostR) -> maps:put(is_angular_boostingR,false,maps:put(r_acceleration, maps:get(r_acceleration,Player) - accel_per_key(), Player))
 	end.
 
 
@@ -249,7 +249,7 @@ applyUserInput(Pid,State,Key,KeyState) ->
 
 
 updateRadiusPlayer(Player,TimeDelta) ->
-	maps:put(radius,maps:get(radius,Player) - rads_per_Sec()*TimeDelta,Player).
+	maps:put(radius,max(maps:get(radius,Player) - rads_per_Sec()*TimeDelta, min_Radius()),Player).
 
 
 giveAgility(Pid,Players,Agility) ->
@@ -329,7 +329,7 @@ moveAll(State,TimeDelta) ->
 
 
 calculate_position(Obj,TimeDelta) ->
-	Velocity = maps:get(velocity),
+	Velocity = maps:get(velocity,Obj),
 	Position = maps:get(pos,Obj),
 	Direction = maps:get(direction,Obj),
 	{X,Y} = Position,

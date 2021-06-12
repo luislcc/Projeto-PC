@@ -14,6 +14,7 @@ class Client{
 	public String password;
 	public String cmd = "";
 	public boolean logged = false;
+	public GameArea gameA;
 
 	Client(String ipAdress,int portNumber){
 		try{
@@ -40,9 +41,7 @@ class Client{
 		try{
 			BufferedReader b = new BufferedReader(new InputStreamReader(s.getInputStream()));
 			receive = b.readLine();
-    	}
-    	catch(Exception e){}
-    	try{
+    		
     		System.out.println(receive);
     		synchronized(this){
     			switch(receive.split(" : ")[0]){
@@ -64,6 +63,9 @@ class Client{
     				break;
 
     				case "game Started":
+    				break;
+
+    				case "update":
     				break;
     				
 
@@ -129,10 +131,9 @@ class Client{
     	}
     	catch(Exception e){}
 
-    	synchronized(this){
-    		return this.connected;
-    	}	
+    	return this.connected;	
     }
+
 }
 
 
@@ -164,7 +165,7 @@ class SocketWriter extends Thread{
 	public void run(){
 		System.out.println("Started Writer");
 		boolean con = true;
-		while(c.connected){
+		while(con){
 			con = c.updateOnSocket();
 		}
 	}
