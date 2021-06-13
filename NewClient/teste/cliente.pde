@@ -103,7 +103,7 @@ class Client{
 			try{
 				wait();
 			}
-			catch(Exception e){System.out.println(e.toString());}
+			catch(Exception e){/*System.out.println(e.toString());*/}
 		}
 		String message = this.cmd;
     	switch(cmd){
@@ -145,7 +145,7 @@ class Client{
 		
 		message += "\n";
     	try{
-    		System.out.println(message);
+    		/*System.out.println(message);*/
     		DataOutputStream dout = new DataOutputStream(this.s.getOutputStream());
     		dout.writeBytes(message);
     		dout.flush();
@@ -169,7 +169,6 @@ class SocketReader extends Thread{
 	}
 
 	public void run(){
-		System.out.println("Started Reader");
 		boolean con = true;
 		while(con){
 			con = c.updateFromSocket(c.s);
@@ -185,7 +184,6 @@ class SocketWriter extends Thread{
 	}
 
 	public void run(){
-		System.out.println("Started Writer");
 		boolean con = true;
 		while(con){
 			con = c.updateOnSocket();

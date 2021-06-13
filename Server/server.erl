@@ -219,10 +219,11 @@ obstacle_to_list(Obstacle_List)->
 
 player_to_list(Players)->
 	L = maps:to_list(Players),
+	%io:format("~p",[[maps:get(energy,M) || {_,M} <- L]]),
 	[[pid_to_list(P),"\n",integer_to_list(check_self(P)),"\n",
 	float_to_list(element(1,maps:get(pos,M))),"\n",float_to_list(element(2,maps:get(pos,M))),
 	"\n",float_to_list(maps:get(radius,M)),"\n",float_to_list( maps:get(direction,M)),"\n",integer_to_list(maps:get(points,M)),
-	"\n",maps:get(username,M),"\n",float_to_list( maps:get(energy,M)),"\n" ] || {P,M} <- L ].
+	"\n",maps:get(username,M),"\n",float_to_list( maps:get(energy,M,0.0)),"\n" ] || {P,M} <- L ].
 
 check_self(Pid) ->
 	S = self(),
