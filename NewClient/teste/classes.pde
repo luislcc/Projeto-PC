@@ -1,6 +1,15 @@
 import java.util.*; 
 
-class Menu{
+interface Displayable{
+	public void setMessages(String message);
+	public void mouseClicked(int mouseX, int mouseY);
+	public void draw();
+	public void keyPressed(char key);
+	public void keyReleased(char key);
+}
+
+
+class Menu implements Displayable{
 	public String displayText, messages;
    	public Client c;
    	public List<Clickable> buttons;
@@ -19,6 +28,12 @@ class Menu{
         }
    	}
 
+   	public void setMessages(String message){
+   		this.messages = message;
+   	}
+
+   	public void keyReleased(char key){}
+
    	public void draw(){
    		fill(0);
    		text(this.displayText + messages, 250, 150);
@@ -32,8 +47,7 @@ class Menu{
         }   		
    	}
 	
-	public void keyPressed(char key){
-	}
+	public void keyPressed(char key){}
 }
 
 
@@ -57,7 +71,7 @@ interface ClickableType{
 
 
 
-class MenuType extends Menu{
+class MenuType extends Menu implements Displayable{
 	public String baseDisplay;
 	public String typing;
 	public List<ClickableType> buttonsType;
@@ -100,4 +114,6 @@ class MenuType extends Menu{
     		this.typing += key;
     	}
 	}
+
+	public void keyReleased(char key){}
 }

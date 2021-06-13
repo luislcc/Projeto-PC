@@ -8,43 +8,43 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %constants
 max_velocity(Radius) ->
-	min_velocity() + 500/Radius.
+	min_velocity() + 10000/Radius.
 
 constant_deaccelereation() ->
-	60.
+	(10.0).
 
 min_velocity() ->
-	10.
+	(40.0).
 
 max_creatures() ->
 	10.
 
 max_acceleration() ->
-	20.
+	(70.0).
 
 min_acceleration() ->
 	(-10).
 
 max_Radius() ->
-	50.
+	(35.0).
 
 min_Radius() ->
-	5.
+	(5.0).
 
 rads_per_Sec() ->
 	(0.5).
 
 energy_per_Sec()->
-	50.
+	(2.0).
 
 rads_per_creature()->
-	4.
+	(4.0).
 
 accel_per_creature()->
-	4.
+	(10.0).
 
 accel_per_key()->
-	10.
+	(50.0).
 %constants
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -92,7 +92,6 @@ create_player(State,Pid,Username,Rad) ->
 	Info4 = maps:put(energy,100,Info3),
 	Info5 = maps:put(velocity,min_velocity(),Info4),
 	Info6 = maps:put(l_velocity,0,Info5),
-	Info6 = maps:put(r_velocity,0,Info5),
 	Info7 = maps:put(f_acceleration,0,Info6),
 	Info8 = maps:put(l_acceleration,0,Info7),
 	Info9 = maps:put(r_acceleration,0,Info8),
@@ -101,7 +100,8 @@ create_player(State,Pid,Username,Rad) ->
 	Info12 = maps:put(is_angular_boostingL,false,Info11),
 	Info13 = maps:put(is_angular_boostingR,false,Info12),
 	Info14 = maps:put(username,Username,Info13),
-	{element(1,State),maps:put(Pid,Info14,element(2,State)),element(3,State)}.
+	Info15 = maps:put(r_velocity,0,Info14),
+	{element(1,State),maps:put(Pid,Info15,element(2,State)),element(3,State)}.
 
 
 getPoints(State) ->
@@ -124,11 +124,10 @@ getPoints(State) ->
 %base criaturas
 probableCreature(State) ->
 	{Map,Players,Creatures} = State,
-	NewCreatures = [maps:put(accel_ang,(rand:uniform(2)-1)*100,Creature) || Creature <- Creatures],
-	Prob = rand:uniform(10),
+	NewCreatures = [maps:put(accel_ang,(rand:uniform(3)-2)*10,Creature) || Creature <- Creatures],
 	CountMax =  max_creatures(),
 	if
-		(Prob == 0) and (length(NewCreatures) < CountMax)-> create_creatures({Map,Players,NewCreatures});
+		(length(NewCreatures) < CountMax)-> create_creatures({Map,Players,NewCreatures});
 		true -> {Map,Players,NewCreatures}
 	end.
 
@@ -136,11 +135,12 @@ create_creatures(State) ->
 	Info = #{},
 	Vel_Min = min_velocity(),
 	Vel_Max = max_velocity(min_Radius()),
+	Rad = min_Radius()+0.2 + rand:uniform()* (max_Radius()-min_Radius()),
 	Info1 = maps:put(type,rand:uniform(2)-1,Info),
-	Info2 = maps:put(pos,new_position(State,min_Radius()),Info1),
-	Info3 = maps:put(radius,min_Radius()+0.2 + rand:uniform()* (max_Radius()-min_Radius()) ,Info2),
+	Info2 = maps:put(pos,new_position(State,Rad),Info1),
+	Info3 = maps:put(radius,Rad,Info2),
 	Info4 = maps:put(direction,rand:uniform()*math:pi()*2,Info3),
-	Info5 = maps:put(velocity,Vel_Min+rand:uniform()*(Vel_Max-Vel_Min),Info4),
+	Info5 = maps:put(velocity,Vel_Min+(rand:uniform()*(Vel_Max-Vel_Min))/5,Info4),
 	Info6 = maps:put(velocity_ang,Vel_Min+rand:uniform()*(Vel_Max-Vel_Min),Info5),
 	Info7 = maps:put(accel_ang,(Vel_Min+rand:uniform()*(Vel_Max-Vel_Min))/20,Info6),
 	{Map,Players,Creatures} = State,
@@ -197,9 +197,9 @@ updateAccelPlayer(Player,TimeDelta)->
 
 
 updateVelocityPlayer(Player,TimeDelta)->
-	Accf = maps:put(velocity, max(min(maps:get(velocity,Player)+maps:get(f_acceleration,Player) *TimeDelta, min_velocity()),max_velocity(maps:get(radius,Player))) ,Player),
-	Accr = maps:put(r_velocity, max(min(maps:get(r_velocity,Player)+maps:get(r_acceleration,Player) *TimeDelta, 0),max_velocity(maps:get(radius,Player))) ,Accf),
-	maps:put(l_velocity, max(min(maps:get(l_velocity,Player)+ maps:get(l_acceleration,Player)*TimeDelta, 0),max_velocity(maps:get(radius,Player))) ,Accr).
+	Accf = maps:put(velocity, min(max(maps:get(velocity,Player)+maps:get(f_acceleration,Player) *TimeDelta, min_velocity()),max_velocity(maps:get(radius,Player))) ,Player),
+	Accr = maps:put(r_velocity, min(max(maps:get(r_velocity,Player)+maps:get(r_acceleration,Player) *TimeDelta, 0),max_velocity(maps:get(radius,Player))) ,Accf),
+	maps:put(l_velocity, min(max(maps:get(l_velocity,Player)+ maps:get(l_acceleration,Player)*TimeDelta, 0),max_velocity(maps:get(radius,Player))) ,Accr).
 
 
 updateEnergy(Player,TimeDelta) ->
@@ -227,15 +227,17 @@ applyUserInputPlayer(Player,Key,KeyState) ->
 	Boost = maps:get(is_boosting,Player),
 	BoostR = maps:get(is_angular_boostingR,Player),
 	BoostL = maps:get(is_angular_boostingL,Player),
+	%io:format("~p",[Key]),
 	case Key of
 		w when (KeyState == d) and (Eny > 0.01) and (not Boost) -> maps:put(is_boosting,true,maps:put(f_acceleration, maps:get(f_acceleration,Player) + accel_per_key(), Player));
 		w when (KeyState == u) and (Boost) -> maps:put(is_boosting,false,maps:put(f_acceleration, maps:get(f_acceleration,Player) - accel_per_key(), Player));
 
-		a when (KeyState == d) and (Eny > 0.01) and (not BoostL) -> maps:put(is_angular_boostingL,true,maps:put(l_acceleration, maps:get(l_acceleration,Player) + accel_per_key(), Player));
-		a when (KeyState == u) and (BoostL) -> maps:put(is_angular_boostingL,false,maps:put(l_acceleration, maps:get(l_acceleration,Player) - accel_per_key(), Player));
+		d when (KeyState == d) and (Eny > 0.01) and (not BoostL) -> maps:put(is_angular_boostingL,true,maps:put(l_acceleration, maps:get(l_acceleration,Player) + accel_per_key(), Player));
+		d when (KeyState == u) and (BoostL) -> maps:put(is_angular_boostingL,false,maps:put(l_acceleration, maps:get(l_acceleration,Player) - accel_per_key(), Player));
 
-		d when (KeyState == d) and (Eny > 0.01) and (not BoostR) -> maps:put(is_angular_boostingR,true,maps:put(r_acceleration, maps:get(r_acceleration,Player) + accel_per_key(), Player));
-		d when (KeyState == u) and (BoostR) -> maps:put(is_angular_boostingR,false,maps:put(r_acceleration, maps:get(r_acceleration,Player) - accel_per_key(), Player))
+		a when (KeyState == d) and (Eny > 0.01) and (not BoostR) -> maps:put(is_angular_boostingR,true,maps:put(r_acceleration, maps:get(r_acceleration,Player) + accel_per_key(), Player));
+		a when (KeyState == u) and (BoostR) -> maps:put(is_angular_boostingR,false,maps:put(r_acceleration, maps:get(r_acceleration,Player) - accel_per_key(), Player));
+		_ -> Player
 	end.
 
 
@@ -284,7 +286,7 @@ updateCreatures(Creature,TimeDelta) ->
 
 
 updateVelocityAngCreature(Creature,TimeDelta) ->
-	maps:put(velocity_ang, min(max(maps:get(velocity_ang,Creature)+maps:get(accel_ang,Creature)*TimeDelta,-20),20)).
+	maps:put(velocity_ang, min(max(maps:get(velocity_ang,Creature)+maps:get(accel_ang,Creature)*TimeDelta,-20),20),Creature).
 
 updateDirectionCreature(Creature,TimeDelta) ->
 	maps:put(direction,fmod( maps:get(direction,Creature) + (maps:get(velocity_ang,Creature)*TimeDelta)  ,2*math:pi()),Creature).
@@ -371,12 +373,18 @@ detectColision(A,B) ->
 
 detectWall(A,Mx,My) ->
 	{{New_x,New_y},Radius} = A,
-	(New_x > (Mx - Radius)) or (New_x < Radius) or (New_y > (My - Radius)) or (New_y < Radius).
+	T = (Radius =< (min_Radius() + (0.01))),
+	K = (New_x > (Mx - Radius)) or (New_x < Radius) or (New_y > (My - Radius)) or (New_y < Radius),
+	case K of
+		true when T -> [dead];
+		true -> [elastic];
+		false -> []
+	end.
 
 
 colisionObject(Obj, Elastic, Deadly, Poisonous, Good , Killable, Reset, Mx,My) ->
-	ValsObj        = {maps:get(pos,Obj),map:get(radius,Obj)},
-	CheckWalls     = [(fun(_) -> B = min_Radius(), if K =< B + (0.01) -> dead; true -> elastic end end) || {_,K} <- [ValsObj], detectWall(ValsObj,Mx,My)],
+	ValsObj        = {maps:get(pos,Obj),maps:get(radius,Obj)},
+	CheckWalls     = detectWall(ValsObj,Mx,My),
 	CheckDead      = [dead || ValDead <- Deadly, detectColision(ValsObj,ValDead)], %morto
 	CheckReset     = [reset || ValReset <- Reset, detectColision(ValsObj,ValReset)], %morreu por outro jogador
 	CheckPoisonous = [poison || ValPoisonous <- Poisonous, detectColision(ValsObj,ValPoisonous)], %comida envenenada
@@ -384,7 +392,7 @@ colisionObject(Obj, Elastic, Deadly, Poisonous, Good , Killable, Reset, Mx,My) -
 	CheckGood      = [good || ValGood <- Good, detectColision(ValsObj,ValGood)], %comida
 	CheckElastic   = [elastic || ValElastic <- Elastic, detectColision(ValsObj,ValElastic)], %comida
 	
-	CheckWalls ++ CheckDead++CheckPoisonous++CheckKillable++CheckGood+CheckElastic++CheckReset.
+	CheckWalls ++ CheckDead++CheckPoisonous++CheckKillable++CheckGood++CheckElastic++CheckReset.
 
 
 
@@ -417,7 +425,7 @@ applyChangesPlayer(Pid,Changes,State,Deads) ->
 	{Map,Players,Creatures} = State,
 	Player = maps:get(Pid,Players),
 	if
-		length(Changes) < 1 -> State;
+		length(Changes) < 1 -> {State,Deads};
 		true -> [H|T] = Changes, 
 		case H of
 			dead -> {removePlayer(Pid,State),[Pid|Deads]};

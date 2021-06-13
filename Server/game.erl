@@ -8,7 +8,7 @@ timeToCreatures() ->
 
 game_starter(LeaderBoard)->
 	receive
-		{toJoin,Pid} -> State = gameEngine:addPlayer(Pid,gameEngine:newState()),spawn(fun()-> mob_spawner(self()) end),game_instance([Pid],LeaderBoard,State,erlang:timestamp());
+		{toJoin,Pid,Username,queue_manager} -> State = gameEngine:addPlayer(Pid,Username,gameEngine:newState()),spawn(fun()-> mob_spawner() end),game_instance([Pid],LeaderBoard,State,erlang:timestamp());
 		_ -> game_starter(LeaderBoard)
 	end.
 
@@ -29,7 +29,7 @@ game_instance(Players,LeaderBoard,State,Timestamp) ->
 		{a_release,Pid} -> NewState = gameEngine:applyUserInput(Pid,State,a,u), NewPlayers = Players;
 		{d_release,Pid} -> NewState = gameEngine:applyUserInput(Pid,State,d,u), NewPlayers = Players;
 		
-		{createCreature,spawner} -> spawn(fun()-> mob_spawner(self()) end),NewState = gameEngine:probableCreature(State),NewPlayers = Players; 
+		{createCreature,spawner} -> spawn(fun()-> mob_spawner() end),NewState = gameEngine:probableCreature(State),NewPlayers = Players; 
 		{toJoin,Pid,Username,queue_manager} ->NewState = gameEngine:addPlayer(Pid,Username,State), NewPlayers = Players ++ [Pid];
 		{leave,Pid} ->Pid!{left,game}, NewState = gameEngine:removePlayer(Pid,State), queue_manager!{left,game}, NewPlayers = Players --[Pid];
 		_ -> NewState = State, NewPlayers = Players
@@ -45,21 +45,21 @@ game_instance(Players,LeaderBoard,State,Timestamp) ->
 	
 	NextPlayers = (NewPlayers -- Deads),
 	[PidL!{update,NextState,LeaderBoard,game} || PidL <- NextPlayers],
-	
+	%io:format("~p~n",[NextState]),
 	game_instance(NextPlayers, NewLeaderBoard ,NextState , erlang:timestamp()).
 
 
 
-mob_spawner(Pid) ->
+mob_spawner() ->
 	timer:sleep(timeToCreatures()),
-	Pid!{createCreature,spawner}.
+	?MODULE!{createCreature,spawner}.
 
 
 
 updateLeaderBoard(LeaderBoard,Current)->
 	if
 		length(Current) < 1 -> LeaderBoard;
-		true -> [{Username,Points} | T] = Current, CurrentUserPoints = maps:get(Username,LeaderBoard), 
+		true -> [{Username,Points} | T] = Current, CurrentUserPoints = maps:get(Username,LeaderBoard,0), 
 				if
 					Points > CurrentUserPoints -> updateLeaderBoard(maps:put(Username,CurrentUserPoints,LeaderBoard),T);
 					true -> updateLeaderBoard(LeaderBoard,T)

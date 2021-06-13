@@ -1,4 +1,4 @@
--module(choqueServer).
+-module(server).
 -export([start/1,stop/0]).
 
 
@@ -116,7 +116,7 @@ user(Sock,Username)->
 		{joined,game} -> gen_tcp:send(Sock,list_to_binary("game started\n")),player(Sock,Username);
 		{enqueued,Position,queue_manager} -> gen_tcp:send(Sock,list_to_binary(["enqueued in : ",integer_to_list(Position),"\n"])),enqueued(Sock,Username);
 		{valid_logout,login_manager} -> gen_tcp:send(Sock,list_to_binary("logged out\n")), logger(Sock);
-		{online,Online_users,login_manager} -> X = string:join(Online_users," "), Y = X ++ " + ", gen_tcp:send(Sock,list_to_binary(["online now : ",Y, "\n"])), user(Sock,Username)
+		{online,Online_users,login_manager} -> X = string:join(Online_users," "), Y = X, gen_tcp:send(Sock,list_to_binary(["online now : ",Y, "\n"])), user(Sock,Username)
 	end.
 
 
@@ -219,10 +219,10 @@ obstacle_to_list(Obstacle_List)->
 
 player_to_list(Players)->
 	L = maps:to_list(Players),
-	[[pid_to_list(P),"\n",float_to_list(element(1,maps:get(pos,M))),"\n",float_to_list(element(2,maps:get(pos,M))),"\n",integer_to_list(maps:get(radius,M)),"\n",float_to_list( maps:get(direction,M)),"\n"] || {P,M} <- L ].
+	[[pid_to_list(P),"\n",float_to_list(element(1,maps:get(pos,M))),"\n",float_to_list(element(2,maps:get(pos,M))),"\n",float_to_list(maps:get(radius,M)),"\n",float_to_list( maps:get(direction,M)),"\n"] || {P,M} <- L ].
 
 creature_to_list(Creatures)->
-	[[integer_to_list(maps:get(type,M)),"\n",float_to_list(element(1,maps:get(pos,M))),"\n",float_to_list(element(2,maps:get(pos,M))),"\n",integer_to_list(maps:get(radius,M)),"\n",float_to_list(maps:get(direction,M)),"\n"] || M <- Creatures].
+	[[integer_to_list(maps:get(type,M)),"\n",float_to_list(element(1,maps:get(pos,M))),"\n",float_to_list(element(2,maps:get(pos,M))),"\n",float_to_list(maps:get(radius,M)),"\n",float_to_list(maps:get(direction,M)),"\n"] || M <- Creatures].
 
 %ParseState
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

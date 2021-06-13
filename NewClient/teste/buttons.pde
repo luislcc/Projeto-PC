@@ -172,30 +172,6 @@ class Cancel implements Clickable{
 }
 
 
-
-class Back implements Clickable{
-  public float posx(){
-    return 100;
-  }
-
-  public float posy(){
-    return 0;
-  }
-  public float extent(){
-    return 90;
-  }
-  public String displayText(){
-    return "Back to Menu";
-  } 
-  public void clicked(int mouseX, int mouseY, Client c){
-    if ((mouseX > this.posx() && mouseX < this.posx()+this.extent()) && (mouseY > this.posy() && mouseY < this.posy()+this.extent())){
-      c.setCMD( "");
-      c.ativo = play;
-    }
-  } 
-}
-
-
 class Logout implements Clickable{
   public float posx(){
     return 275;

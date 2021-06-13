@@ -10,7 +10,7 @@ initialize()->
 
 loop(Queue,PlayerNum) ->
 	receive
-		{join,Pid,Username} when (PlayerNum > -1) -> loop(enqueue(Pid,Username,Queue),PlayerNum);
+		{join,Pid,Username} when (PlayerNum > 2) -> loop(enqueue(Pid,Username,Queue),PlayerNum);
 		{join,Pid,Username} -> joinGame(Pid,Username), loop(Queue,PlayerNum+1);		
 		{leave,Pid,_} -> Pid!{leftQueue,queue_manager},loop(removeQueue(Pid,Queue),PlayerNum);
 		{left,game} -> {Dequeued,NewQueue} = dequeue(Queue), loop(NewQueue,PlayerNum-1+Dequeued);

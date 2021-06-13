@@ -6,15 +6,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.locks.*;
 
 class Client{
-
 	private Socket s;
 	public boolean connected = true;
-	public Menu ativo;
+	public Displayable ativo;
 	public String username;
 	public String password;
 	public String cmd = "";
 	public boolean logged = false;
-	public GameArea gameA;
 
 	Client(String ipAdress,int portNumber){
 		try{
@@ -48,40 +46,45 @@ class Client{
     				case "valid login":
     					this.logged = true;
     					this.ativo = play;
-    					this.ativo.messages = "\n" + receive;
+    					this.ativo.setMessages("\n" + receive);
     				break;
 	
     				case "logged out":
     					this.logged = false;
     					this.ativo = inicial;
-    					this.ativo.messages = "\n" + receive;
+    					this.ativo.setMessages("\n" + receive);
     				break;
 
     				case "enqueued in":
     					this.ativo = queued;
-    					this.ativo.messages = "\n" + receive;
+    					this.ativo.setMessages("\n" + receive);
     				break;
 
-    				case "game Started":
+    				case "game started":
+    					this.ativo = loadingData;
+    					this.ativo.setMessages("\n" + receive);
     				break;
 
     				case "update":
+    					this.ativo.setMessages("");
+    					GameArea buffer = new GameArea(1000,600,this);
+    					buffer.receiveState(b);
+    					this.ativo = buffer;
     				break;
     				
-
-
+    				
     				default:
     					this.ativo = inicial;
     					if (this.logged) {
     						this.ativo = play;
     					}
-    					this.ativo.messages = "\n" + receive;
+    					this.ativo.setMessages("\n" + receive);
     					break;
     			}
     		}
     	}
     	catch(Exception e){
-    		this.ativo = loadingData;this.ativo.messages = "\n" + "Lost Server Conection..."; 
+    		this.ativo = loadingData;this.ativo.setMessages("\n" + "Lost Server Conection..."); 
     		synchronized(this){
     			this.connected = false;
     		} 
@@ -116,6 +119,24 @@ class Client{
     		case "leave":
     		break;
 
+    		case "w_p":
+    		break;
+
+    		case "w_r":
+    		break;
+
+    		case "a_p":
+    		break;
+    		
+    		case "a_r":
+    		break;
+
+    		case "d_p":
+    		break;
+
+    		case "d_r":
+    		break;
+    		
     		default:
 				message += " " + this.username + " " + this.password;
     		break;

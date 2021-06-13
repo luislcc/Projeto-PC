@@ -9,7 +9,6 @@ MenuType loginPas = new MenuType("Insira a Password",c, new ArrayList<Clickable>
 
 Menu play = new Menu("Logged in",c,new ArrayList<Clickable>(Arrays.asList(new Logout(), new Play(), new Online())) );
 Menu queued = new Menu("Enqueued",c,new ArrayList<Clickable>(Arrays.asList(new Leave())));
-Menu dead = new Menu("Died",c,new ArrayList<Clickable>(Arrays.asList(new Back())));
 
 Menu playersOnline = new Menu("Users Online",c,new ArrayList<Clickable>(Arrays.asList(new Cancel())));
 
@@ -20,11 +19,11 @@ Menu loadingData = new Menu("Retrieving Data from server wait...",c,new ArrayLis
 
 void setup(){
   size(1000,600);
+  //f = createFont("Arial",32);
   synchronized(c){
     c.ativo = inicial;
   }
 }
-
 
 void draw(){
   clear();
@@ -41,6 +40,11 @@ void mouseClicked(){
   }
 }
 
+void keyReleased(){
+  synchronized(c){
+    c.ativo.keyReleased(key);
+  } 
+}
 
 void keyPressed(){
   synchronized(c){
