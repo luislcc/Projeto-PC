@@ -10,7 +10,7 @@ class GameArea implements Displayable{
   private HashMap<String,Integer> scoreboard;
   private Obstacle[] obstacles;
   private Creature[] creatures;
-  private Client c;
+  public Client c;
 
   GameArea(int width, int height, Client c){
     try{

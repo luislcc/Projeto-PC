@@ -41,7 +41,11 @@ class Client{
 			BufferedReader b = new BufferedReader(new InputStreamReader(s.getInputStream()));
 			receive = b.readLine();
     		
-    		//System.out.println(receive);
+    		GameArea buffer = new GameArea(1000,600,this);
+    		if (receive.equals("update")){
+    			buffer.receiveState(b);    			
+    		}
+    		
     		synchronized(this){
     			switch(receive.split(" : ")[0]){
     				case "valid login":
@@ -68,8 +72,6 @@ class Client{
 
     				case "update":
     					this.ativo.setMessages("");
-    					GameArea buffer = new GameArea(1000,600,this);
-    					buffer.receiveState(b);
     					this.ativo = buffer;
     				break;
     				
