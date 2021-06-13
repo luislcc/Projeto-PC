@@ -7,6 +7,7 @@ class GameArea implements Displayable{
   private int width;
   private HashMap<String,Player> players;
   private HashMap<String,Integer> leaderboard;
+  private HashMap<String,Integer> scoreboard;
   private Obstacle[] obstacles;
   private Creature[] creatures;
   private Client c;
@@ -16,6 +17,7 @@ class GameArea implements Displayable{
     this.height = height;
     this.width = width;
     this.leaderboard = new HashMap<String,Integer>();
+    this.scoreboard = new HashMap<String,Integer>();
     this.players = new HashMap<String,Player>();
     this.obstacles = new Obstacle[0];
     this.creatures = new Creature[0];
@@ -55,6 +57,12 @@ class GameArea implements Displayable{
              Integer points = Integer.parseInt(b.readLine());
             this.leaderboard.put(player,points);
          }
+         
+         for(Map.Entry<String,Player> e : this.players.entrySet()){
+            Player player = e.getValue();
+            this.scoreboard.put(player.username,player.points);
+         }    
+
     }
     catch(Exception e){}
    // this.printState();
@@ -75,14 +83,19 @@ class GameArea implements Displayable{
 
   public Player receivePlayer(BufferedReader b){
     try{
+      boolean isSelf = (Integer.parseInt(b.readLine()) == 1);
       Float posX = Float.parseFloat(b.readLine());
       Float posY = Float.parseFloat(b.readLine());
       Float radius = Float.parseFloat(b.readLine());
       Float direction = Float.parseFloat(b.readLine());
-      return new Player(posX,posY,radius,direction);
+      int points = Integer.parseInt(b.readLine());
+      String username = b.readLine();
+      Float energy = Float.parseFloat(b.readLine());
+
+      return new Player(posX,posY,radius,direction, points, isSelf, username,energy);
     }
     catch(Exception e){}
-    return new Player( 0.0f,  0.0f,  0.0f, 0.0f);
+    return new Player( 0.0f,  0.0f,  0.0f, 0.0f, 0, false,"",0.0f);
   }
 
 
@@ -113,15 +126,56 @@ class GameArea implements Displayable{
   }
 
   public void draw(){
+    boolean cond;
+    synchronized(c){
+      cond = c.showScores;
+    }
     color col = color(255,255,255);
     fill(col);
     rect(0,0,width,height); // Desenha a tela do jogo
     for(Player p : this.players.values()) p.draw();
     for(Creature c : this.creatures) c.draw();
     for(Obstacle o : this.obstacles) o.draw();
+
+    if (cond){
+      this.drawPoints();
+    }
   }
 
   public void mouseClicked(int mouseX, int mouseY){
+  }
+
+
+  public void drawPoints(){
+    fill(120);
+    rect(500-width/8,0,width/4,height/2);
+    fill(0);
+    textAlign(CENTER);
+    text("Leaderboard", 500, 25);
+    int spacing = 47;
+    int i = 1;
+    for(Map.Entry<String,Integer> e : this.leaderboard.entrySet()){
+      if (i < 6){
+        textAlign(CENTER);
+        text(e.getKey() + " : " + e.getValue(), 500, i*spacing);
+        i++;
+      }
+   }
+    fill(0);
+    rect(500-width/8,height/2,width/4,height/2);
+    fill(255);
+    textAlign(CENTER);
+    text("Scoreboard", 500, height/2 + 25);
+    i = 1;
+    for(Map.Entry<String,Integer> e : this.scoreboard.entrySet()){
+      if (i < 6){
+        textAlign(CENTER);
+        text(e.getKey() + " : " + e.getValue(), 500, height/2 + i*spacing);
+        i++;
+      }
+   }  
+
+
   }
 
   public void keyPressed(char key){
@@ -146,6 +200,14 @@ class GameArea implements Displayable{
       c.communicate();
       break;
 
+      case TAB:
+      System.out.println("kappa");
+      synchronized(c){
+        c.showScores = true;
+      }
+      break;
+
+
       default:
       break;
     }
@@ -168,6 +230,12 @@ class GameArea implements Displayable{
       c.communicate();
       break;
 
+      case TAB:
+      synchronized(c){
+        c.showScores = false;
+      }
+      break;      
+
       default:
       break;
     }
@@ -183,13 +251,21 @@ class Player{
   private Float[] position;
   private Float radius;
   private Float direction;
+  private Float energy;
+  public int points;
+  public String username;
+  public boolean isSelf;
 
-  Player(Float x, Float y, Float radius,Float direction){
+  Player(Float x, Float y, Float radius,Float direction, int points, boolean isSelf, String username, Float energy){
     this.position = new Float[2];
     this.position[0] = x;
     this.position[1] = y;
     this.radius = radius;
     this.direction = direction;
+    this.username = username;
+    this.points = points;
+    this.isSelf = isSelf;
+    this.energy = energy;
   }
 
   public String toString(){
@@ -208,11 +284,24 @@ class Player{
   
   
   public void draw(){
-    color c = color(0,0,255);
-    fill(c);
+    color k = color(0,0,255);
+    if (this.isSelf){
+        k = color(0,200,255);
+    }
+
+    fill(k);
     circle(this.position[0],this.position[1],radius*2);
+    
+    if(this.isSelf){
+      k = color(233, 132, 255);
+      fill(k);
+      circle(this.position[0],this.position[1],radius*2*(this.energy)/100);
+    }
+    
     stroke(color(255,255,255));
     line(this.position[0],this.position[1],this.position[0] + cos(this.direction)*this.radius, this.position[1] + sin(this.direction)*this.radius);
+  
+
   }
 }
 

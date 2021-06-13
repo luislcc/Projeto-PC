@@ -1,13 +1,13 @@
 class Login implements Clickable{
   public float posx(){
-    return 75;
+    return 125;
   }
 
   public float posy(){
-    return 400;
+    return 350;
   }
   public float extent(){
-    return 200;
+    return 250;
   }
   public String displayText(){
     return "Login";
@@ -22,14 +22,14 @@ class Login implements Clickable{
 
 class Create implements Clickable{
   public float posx(){
-    return 275;
+    return 375;
   }
 
   public float posy(){
-    return 400;
+    return 350;
   }
   public float extent(){
-    return 200;
+    return 250;
   }
   public String displayText(){
     return "Create Acc";
@@ -45,14 +45,14 @@ class Create implements Clickable{
 
 class Close implements Clickable{
   public float posx(){
-    return 475;
+    return 625;
   }
 
   public float posy(){
-    return 400;
+    return 350;
   }
   public float extent(){
-    return 200;
+    return 250;
   }
   public String displayText(){
     return "Close Acc";
@@ -69,14 +69,14 @@ class Close implements Clickable{
 
 class Online implements Clickable{
   public float posx(){
-    return 675;
+    return 750;
   }
 
   public float posy(){
-    return 400;
+    return 0;
   }
   public float extent(){
-    return 200;
+    return 250;
   }
   public String displayText(){
     return "Online now";
@@ -95,14 +95,14 @@ class Online implements Clickable{
 
 class SubmitUsername implements ClickableType{
   public float posx(){
-    return 675;
+    return 750;
   }
 
   public float posy(){
     return 0;
   }
   public float extent(){
-    return 90;
+    return 250;
   }
   public String displayText(){
     return "OK!";
@@ -121,14 +121,14 @@ class SubmitUsername implements ClickableType{
 
 class SubmitPassword implements ClickableType{
   public float posx(){
-    return 675;
+    return 750;
   }
 
   public float posy(){
     return 0;
   }
   public float extent(){
-    return 90;
+    return 250;
   }
   public String displayText(){
     return "Ok!";
@@ -149,14 +149,14 @@ class SubmitPassword implements ClickableType{
 
 class Cancel implements Clickable{
   public float posx(){
-    return 100;
+    return 0;
   }
 
   public float posy(){
     return 0;
   }
   public float extent(){
-    return 90;
+    return 250;
   }
   public String displayText(){
     return "Cancel";
@@ -174,17 +174,17 @@ class Cancel implements Clickable{
 
 class Logout implements Clickable{
   public float posx(){
-    return 275;
+    return 250;
   }
 
   public float posy(){
-    return 400;
+    return 350;
   }
   public float extent(){
-    return 200;
+    return 250;
   }
   public String displayText(){
-    return "logout";
+    return "Logout";
   } 
   public void clicked(int mouseX, int mouseY, Client c){
     if ((mouseX > this.posx() && mouseX < this.posx()+this.extent()) && (mouseY > this.posy() && mouseY < this.posy()+this.extent())){
@@ -198,14 +198,14 @@ class Logout implements Clickable{
 
 class Play implements Clickable{
   public float posx(){
-    return 475;
+    return 500;
   }
 
   public float posy(){
-    return 400;
+    return 350;
   }
   public float extent(){
-    return 200;
+    return 250;
   }
   public String displayText(){
     return "Match Make";
@@ -222,14 +222,14 @@ class Play implements Clickable{
 
 class Leave implements Clickable{
   public float posx(){
-    return 475;
+    return 375;
   }
 
   public float posy(){
-    return 400;
+    return 350;
   }
   public float extent(){
-    return 200;
+    return 250;
   }
   public String displayText(){
     return "Leave Queue";

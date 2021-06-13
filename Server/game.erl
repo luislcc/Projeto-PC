@@ -45,7 +45,7 @@ game_instance(Players,LeaderBoard,State,Timestamp) ->
 	
 	NextPlayers = (NewPlayers -- Deads),
 	[PidL!{update,NextState,LeaderBoard,game} || PidL <- NextPlayers],
-	%io:format("~p~n",[NextState]),
+	%io:format("~p~n",[element(2,NextState)]),
 	game_instance(NextPlayers, NewLeaderBoard ,NextState , erlang:timestamp()).
 
 
@@ -61,7 +61,7 @@ updateLeaderBoard(LeaderBoard,Current)->
 		length(Current) < 1 -> LeaderBoard;
 		true -> [{Username,Points} | T] = Current, CurrentUserPoints = maps:get(Username,LeaderBoard,0), 
 				if
-					Points > CurrentUserPoints -> updateLeaderBoard(maps:put(Username,CurrentUserPoints,LeaderBoard),T);
+					Points >= CurrentUserPoints -> updateLeaderBoard(maps:put(Username,Points,LeaderBoard),T);
 					true -> updateLeaderBoard(LeaderBoard,T)
 				end 
 	end.

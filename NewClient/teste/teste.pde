@@ -15,11 +15,13 @@ Menu playersOnline = new Menu("Users Online",c,new ArrayList<Clickable>(Arrays.a
 Menu loadingData = new Menu("Retrieving Data from server wait...",c,new ArrayList<Clickable>());
 
 
-
+PFont f;  
 
 void setup(){
   size(1000,600);
-  //f = createFont("Arial",32);
+  f = createFont("Arial",24);
+  textFont(f);
+  
   synchronized(c){
     c.ativo = inicial;
   }

@@ -13,6 +13,7 @@ class Client{
 	public String password;
 	public String cmd = "";
 	public boolean logged = false;
+	public boolean showScores = false;
 
 	Client(String ipAdress,int portNumber){
 		try{
@@ -40,7 +41,7 @@ class Client{
 			BufferedReader b = new BufferedReader(new InputStreamReader(s.getInputStream()));
 			receive = b.readLine();
     		
-    		System.out.println(receive);
+    		//System.out.println(receive);
     		synchronized(this){
     			switch(receive.split(" : ")[0]){
     				case "valid login":

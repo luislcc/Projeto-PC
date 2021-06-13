@@ -36,13 +36,14 @@ class Menu implements Displayable{
 
    	public void draw(){
    		fill(0);
-   		text(this.displayText + messages, 250, 150);
+   		textAlign(CENTER);
+   		text(this.displayText + messages, 500, 200);
         for (int i = 0; i < this.buttons.size(); i++) {
             Clickable x = this.buttons.get(i);
             fill(120);
             rect(x.posx(),x.posy(),x.extent(),x.extent());
             fill(0);
-            textAlign(LEFT);
+            textAlign(CENTER);
             text(x.displayText(),x.posx()+x.extent()/2,x.posy()+x.extent()/2);
         }   		
    	}
@@ -93,13 +94,14 @@ class MenuType extends Menu implements Displayable{
 
 	public void draw(){
 		this.displayText = baseDisplay + "\n\n" + this.typing;
+		textAlign(CENTER);
 		super.draw();
         for (int i = 0; i < this.buttonsType.size(); i++) {
             ClickableType x = this.buttonsType.get(i);
             fill(120);
             rect(x.posx(),x.posy(),x.extent(),x.extent());
             fill(0);
-            textAlign(LEFT);
+            textAlign(CENTER);
             text(x.displayText(),x.posx()+x.extent()/2,x.posy()+x.extent()/2);
         } 		
 	}

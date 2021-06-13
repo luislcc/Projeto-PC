@@ -35,7 +35,7 @@ rads_per_Sec() ->
 	(0.5).
 
 energy_per_Sec()->
-	(2.0).
+	(15.0).
 
 rads_per_creature()->
 	(4.0).
@@ -124,7 +124,7 @@ getPoints(State) ->
 %base criaturas
 probableCreature(State) ->
 	{Map,Players,Creatures} = State,
-	NewCreatures = [maps:put(accel_ang,(rand:uniform(3)-2)*10,Creature) || Creature <- Creatures],
+	NewCreatures = [maps:put(accel_ang,(rand:uniform(3)-2)*5,Creature) || Creature <- Creatures],
 	CountMax =  max_creatures(),
 	if
 		(length(NewCreatures) < CountMax)-> create_creatures({Map,Players,NewCreatures});
@@ -140,7 +140,7 @@ create_creatures(State) ->
 	Info2 = maps:put(pos,new_position(State,Rad),Info1),
 	Info3 = maps:put(radius,Rad,Info2),
 	Info4 = maps:put(direction,rand:uniform()*math:pi()*2,Info3),
-	Info5 = maps:put(velocity,Vel_Min+(rand:uniform()*(Vel_Max-Vel_Min))/5,Info4),
+	Info5 = maps:put(velocity,Vel_Min+(rand:uniform()*(Vel_Max-Vel_Min))/10,Info4),
 	Info6 = maps:put(velocity_ang,Vel_Min+rand:uniform()*(Vel_Max-Vel_Min),Info5),
 	Info7 = maps:put(accel_ang,(Vel_Min+rand:uniform()*(Vel_Max-Vel_Min))/20,Info6),
 	{Map,Players,Creatures} = State,
@@ -206,9 +206,9 @@ updateEnergy(Player,TimeDelta) ->
 	Cond = maps:get(is_boosting,Player) or maps:get(is_angular_boostingL,Player) or maps:get(is_angular_boostingR,Player),
 	NowEnergy = maps:get(energy,Player),
 	if
-		NowEnergy =< 0 -> maps:put(energy,NowEnergy+ energy_per_Sec()*TimeDelta/5,deactivateAllBoosts(Player));
-		Cond -> maps:put(energy,NowEnergy- energy_per_Sec()*TimeDelta,Player);
-		true -> maps:put(energy,NowEnergy+ energy_per_Sec()*TimeDelta/5,Player)
+		NowEnergy =< 0 -> maps:put(energy,min(NowEnergy+ energy_per_Sec()*TimeDelta,100.0),deactivateAllBoosts(Player));
+		Cond -> maps:put(energy,max(NowEnergy- energy_per_Sec()*TimeDelta,0.0),Player);
+		true -> maps:put(energy,min(NowEnergy+ energy_per_Sec()*TimeDelta,100.0),Player)
 	end.
 
 

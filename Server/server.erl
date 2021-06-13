@@ -73,7 +73,7 @@ logger(Sock)->
 		
 		{online,Online_users,login_manager} ->
 				X = string:join(Online_users," "),
-				Y = X ++ " + ",
+				Y = X,
 				gen_tcp:send(Sock,list_to_binary(["online now : ",Y, "\n"])),
 				logger(Sock)
 	end.
@@ -169,7 +169,7 @@ player(Sock,Username) ->
 		{tcp,_,Data} -> playerParser(Data,Sock,Username);
 		{update,NextState,Leaderboard,game} -> sendState(Sock,NextState,Leaderboard),player(Sock,Username);
 		{left,game} -> gen_tcp:send(Sock,list_to_binary("left game\n")),user(Sock,Username);
-		{dead,game} -> gen_tcp:send(Sock,list_to_binary("GG WP\n")),user(Sock,Username)
+		{dead,game} -> gen_tcp:send(Sock,list_to_binary("lost!\n")),user(Sock,Username)
 	end.
 
 
@@ -219,7 +219,17 @@ obstacle_to_list(Obstacle_List)->
 
 player_to_list(Players)->
 	L = maps:to_list(Players),
-	[[pid_to_list(P),"\n",float_to_list(element(1,maps:get(pos,M))),"\n",float_to_list(element(2,maps:get(pos,M))),"\n",float_to_list(maps:get(radius,M)),"\n",float_to_list( maps:get(direction,M)),"\n"] || {P,M} <- L ].
+	[[pid_to_list(P),"\n",integer_to_list(check_self(P)),"\n",
+	float_to_list(element(1,maps:get(pos,M))),"\n",float_to_list(element(2,maps:get(pos,M))),
+	"\n",float_to_list(maps:get(radius,M)),"\n",float_to_list( maps:get(direction,M)),"\n",integer_to_list(maps:get(points,M)),
+	"\n",maps:get(username,M),"\n",float_to_list( maps:get(energy,M)),"\n" ] || {P,M} <- L ].
+
+check_self(Pid) ->
+	S = self(),
+	if
+		Pid == S -> 1;
+		true -> 0
+	end.
 
 creature_to_list(Creatures)->
 	[[integer_to_list(maps:get(type,M)),"\n",float_to_list(element(1,maps:get(pos,M))),"\n",float_to_list(element(2,maps:get(pos,M))),"\n",float_to_list(maps:get(radius,M)),"\n",float_to_list(maps:get(direction,M)),"\n"] || M <- Creatures].
